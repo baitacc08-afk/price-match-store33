@@ -1,12 +1,14 @@
+"use strict";
+
 const productContainer = document.getElementById("products");
 const searchInput = document.getElementById("search");
 const resultCount = document.getElementById("result-count");
 const categoryContainer = document.getElementById("categories");
 
+const CATALOGUE_FILE = "./supercheap_products.json";
+
 let allProducts = [];
 let selectedCategory = "All";
-
-const CATALOGUE_FILE = "./supercheap_products.json";
 
 // Escape text before inserting it into HTML.
 function escapeHTML(value = "") {
@@ -36,7 +38,7 @@ function formatPrice(price, currency = "AUD") {
   }).format(Number(price));
 }
 
-// Allow only valid HTTPS Supercheap Auto product links.
+// Validate Supercheap Auto product URLs.
 function getProductURL(product) {
   try {
     const url = new URL(product.productUrl);
@@ -54,7 +56,7 @@ function getProductURL(product) {
   return "";
 }
 
-// Validate image URLs.
+// Validate product image URLs.
 function getProductImage(product) {
   try {
     const url = new URL(product.image);
@@ -69,7 +71,7 @@ function getProductImage(product) {
   return "";
 }
 
-// Group detailed catalogue categories into the website's filters.
+// Filter products by the selected category.
 function matchesCategory(product) {
   if (selectedCategory === "All") {
     return true;
@@ -77,32 +79,143 @@ function matchesCategory(product) {
 
   const category = String(product.category || "").toLowerCase();
   const name = String(product.name || "").toLowerCase();
+  const combined = `${category} ${name}`;
 
   switch (selectedCategory) {
     case "Oils & Fluids":
-      return (
-        /oil|fluid|lubricant|additive|filter|coolant|brake fluid|transmission fluid/
-          .test(category + " " + name)
-      );
+      return /oil|fluid|lubricant|additive|filter|coolant/.test(combined);
 
     case "Tools":
-      return (
-        /tools?|tool kits?|equipment|workshop/
-          .test(category + " " + name)
-      );
+      return /tools?|tool kits?|equipment|workshop/.test(combined);
 
     case "Accessories":
-      return (
-        /accessor|interior|exterior|car care|cleaning|paint/
-          .test(category + " " + name)
-      );
+      return /accessor|interior|exterior|car care|cleaning|paint/.test(combined);
 
     default:
       return category === selectedCategory.toLowerCase();
   }
 }
 
-// Display products.
+// Create the product details window.
+const productModal = document.createElement("dialog");
+
+productModal.id = "product-modal";
+productModal.className = "product-modal";
+
+productModal.innerHTML = `
+  <button
+    type="button"
+    class="modal-close"
+    aria-label="Close product details"
+  >
+    &times;
+  </button>
+
+  <div id="modal-product-content"></div>
+`;
+
+document.body.appendChild(productModal);
+
+const modalContent = document.getElementById("modal-product-content");
+
+// Open the product details window.
+function openProductDetails(product) {
+  if (!product) {
+    return;
+  }
+
+  const imageURL = getProductImage(product);
+  const productURL = getProductURL(product);
+  const name = escapeHTML(product.name || "Unnamed product");
+  const brand = escapeHTML(product.brand || "Brand unavailable");
+  const category = escapeHTML(product.category || "Uncategorised");
+  const price = escapeHTML(
+    formatPrice(product.price, product.currency || "AUD")
+  );
+
+  const imageHTML = imageURL
+    ? `
+      <img
+        class="modal-product-image"
+        src="${escapeHTML(imageURL)}"
+        alt="${name}"
+        onerror="this.style.display='none';document.getElementById('modal-image-fallback').style.display='grid'"
+      >
+      <div
+        id="modal-image-fallback"
+        class="modal-image-fallback"
+        style="display:none"
+      >
+        Image unavailable
+      </div>
+    `
+    : `
+      <div class="modal-image-fallback">
+        Image unavailable
+      </div>
+    `;
+
+  modalContent.innerHTML = `
+    ${imageHTML}
+
+    <div class="modal-product-information">
+      <p class="product-category">${category}</p>
+
+      <h2>${name}</h2>
+
+      <p class="product-brand">
+        Brand: ${brand}
+      </p>
+
+      <p class="product-price">${price}</p>
+
+      <p class="price-label">
+        Listed in the Supercheap Auto catalogue.
+      </p>
+
+      ${
+        productURL
+          ? `
+            <a
+              class="compare-button modal-retailer-button"
+              href="${escapeHTML(productURL)}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View at Supercheap Auto
+            </a>
+          `
+          : `
+            <button
+              class="compare-button"
+              type="button"
+              disabled
+            >
+              Product link unavailable
+            </button>
+          `
+      }
+    </div>
+  `;
+
+  productModal.showModal();
+}
+
+// Close button.
+productModal
+  .querySelector(".modal-close")
+  .addEventListener("click", () => {
+    productModal.close();
+  });
+
+// Close when the user clicks the backdrop.
+productModal.addEventListener("click", event => {
+  if (event.target === productModal) {
+    productModal.close();
+  }
+});
+
+// Render the catalogue.
 function renderProducts() {
   const query = searchInput.value.trim().toLowerCase();
 
@@ -113,7 +226,9 @@ function renderProducts() {
       product.sku,
       product.category,
       product.source
-    ].join(" ").toLowerCase();
+    ]
+      .join(" ")
+      .toLowerCase();
 
     return (
       searchableText.includes(query) &&
@@ -132,95 +247,134 @@ function renderProducts() {
         <p>Try another search or select All products.</p>
       </div>
     `;
+
     return;
   }
 
-  productContainer.innerHTML = filteredProducts.map(product => {
-    const name = escapeHTML(product.name || "Unnamed product");
-    const brand = escapeHTML(product.brand || "Brand unavailable");
-    const category = escapeHTML(product.category || "Uncategorised");
-    const price = escapeHTML(
-      formatPrice(product.price, product.currency || "AUD")
-    );
+  productContainer.innerHTML = filteredProducts
+    .map(product => {
+      const name = escapeHTML(product.name || "Unnamed product");
+      const brand = escapeHTML(product.brand || "Brand unavailable");
+      const category = escapeHTML(product.category || "Uncategorised");
 
-    const imageURL = getProductImage(product);
-    const productURL = getProductURL(product);
+      const price = escapeHTML(
+        formatPrice(product.price, product.currency || "AUD")
+      );
 
-    const imageHTML = imageURL
-      ? `
-        <img
-          src="${escapeHTML(imageURL)}"
-          alt="${name}"
-          loading="lazy"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
+      const imageURL = getProductImage(product);
+      const productURL = getProductURL(product);
+
+      // Use the original catalogue position so clicks open the correct item.
+      const productIndex = allProducts.indexOf(product);
+
+      const imageHTML = imageURL
+        ? `
+          <img
+            src="${escapeHTML(imageURL)}"
+            alt="${name}"
+            loading="lazy"
+          >
+        `
+        : `<span>Image unavailable</span>`;
+
+      return `
+        <article
+          class="product-card"
+          data-product-index="${productIndex}"
+          tabindex="0"
+          role="button"
+          aria-label="View details for ${name}"
         >
-        <span style="display:none">Image unavailable</span>
-      `
-      : `<span>Image unavailable</span>`;
+          <div class="product-image">
+            ${imageHTML}
+          </div>
 
-    const imageContainer = productURL
-      ? `
-        <a
-          class="product-image"
-          href="${escapeHTML(productURL)}"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="View ${name} at Supercheap Auto"
-        >
-          ${imageHTML}
-        </a>
-      `
-      : `
-        <div class="product-image">
-          ${imageHTML}
-        </div>
+          <div class="product-info">
+            <span class="product-category">${category}</span>
+
+            <h3>${name}</h3>
+
+            <p class="product-brand">${brand}</p>
+
+            <p class="product-price">${price}</p>
+
+            <p class="price-label">
+              Supercheap Auto catalogue
+            </p>
+
+            <button
+              class="compare-button details-button"
+              type="button"
+              data-product-index="${productIndex}"
+            >
+              View product details
+            </button>
+
+            ${
+              productURL
+                ? `
+                  <a
+                    class="retailer-link"
+                    href="${escapeHTML(productURL)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View at Supercheap Auto
+                  </a>
+                `
+                : ""
+            }
+          </div>
+        </article>
       `;
-
-    const productButton = productURL
-      ? `
-        <a
-          class="compare-button"
-          href="${escapeHTML(productURL)}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          View at Supercheap Auto
-        </a>
-      `
-      : `
-        <button class="compare-button" type="button" disabled>
-          Product link unavailable
-        </button>
-      `;
-
-    return `
-      <article class="product-card">
-        ${imageContainer}
-
-        <div class="product-info">
-          <span class="product-category">${category}</span>
-
-          <h3>${name}</h3>
-
-          <p class="product-brand">${brand}</p>
-
-          <p class="product-price">${price}</p>
-
-          <p class="price-label">
-            Supercheap Auto catalogue
-          </p>
-
-          ${productButton}
-        </div>
-      </article>
-    `;
-  }).join("");
+    })
+    .join("");
 }
+
+// Handle clicks on product cards.
+// Retailer links open normally without triggering the product window.
+productContainer.addEventListener("click", event => {
+  const retailerLink = event.target.closest(".retailer-link");
+
+  if (retailerLink) {
+    return;
+  }
+
+  const card = event.target.closest(".product-card");
+
+  if (!card) {
+    return;
+  }
+
+  const index = Number(card.dataset.productIndex);
+  openProductDetails(allProducts[index]);
+});
+
+// Support keyboard navigation.
+productContainer.addEventListener("keydown", event => {
+  const card = event.target.closest(".product-card");
+
+  if (!card) {
+    return;
+  }
+
+  // Let buttons and links handle their own keyboard actions.
+  if (event.target.closest("a, button")) {
+    return;
+  }
+
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+
+    const index = Number(card.dataset.productIndex);
+    openProductDetails(allProducts[index]);
+  }
+});
 
 // Search products as the user types.
 searchInput.addEventListener("input", renderProducts);
 
-// Handle category buttons.
+// Category filters.
 categoryContainer.addEventListener("click", event => {
   const button = event.target.closest(".category");
 
@@ -231,16 +385,16 @@ categoryContainer.addEventListener("click", event => {
   selectedCategory = button.dataset.category;
 
   document.querySelectorAll(".category").forEach(categoryButton => {
-    categoryButton.classList.toggle(
-      "active",
-      categoryButton === button
-    );
+    const isActive = categoryButton === button;
+
+    categoryButton.classList.toggle("active", isActive);
+    categoryButton.setAttribute("aria-pressed", String(isActive));
   });
 
   renderProducts();
 });
 
-// Load ONLY the Supercheap Auto catalogue.
+// Load ONLY Supercheap Auto products.
 async function initialiseCatalogue() {
   resultCount.textContent = "Loading Supercheap Auto products...";
 
@@ -261,7 +415,6 @@ async function initialiseCatalogue() {
       throw new Error("The catalogue must contain a JSON array.");
     }
 
-    // Keep only valid product records from this catalogue.
     allProducts = products.filter(product => {
       return (
         product &&
@@ -287,7 +440,7 @@ async function initialiseCatalogue() {
         <h3>Unable to load Supercheap Auto products</h3>
         <p>${escapeHTML(error.message)}</p>
         <p>
-          Check that supercheap_products.json exists
+          Check that supercheap_products.json is published
           alongside index.html and app.js.
         </p>
       </div>
