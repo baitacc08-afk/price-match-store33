@@ -1,0 +1,54 @@
+[
+  {
+    "id": "demo-001",
+    "name": "Example Engine Oil 5W-30",
+    "brand": "Example Brand",
+    "sku": "DEMO-001",
+    "category": "Oils & Fluids",
+    "price": 49.99,
+    "currency": "AUD",
+    "image": "",
+    "productUrl": "",
+    "offers": [],
+    "demo": true
+  },
+  {
+    "id": "demo-002",
+    "name": "Example Oil Filter",
+    "brand": "Example Brand",
+    "sku": "DEMO-002",
+    "category": "Accessories",
+    "price": 16.99,
+    "currency": "AUD",
+    "image": "",
+    "productUrl": "",
+    "offers": [],
+    "demo": true
+  },
+  {
+    "id": "demo-003",
+    "name": "Example Socket Set",
+    "brand": "Example Tools",
+    "sku": "DEMO-003",
+    "category": "Tools",
+    "price": 39.99,
+    "currency": "AUD",
+    "image": "",
+    "productUrl": "",
+    "offers": [],
+    "demo": true
+  },
+  {
+    "id": "demo-004",
+    "name": "Example Battery Charger",
+    "brand": "Example Brand",
+    "sku": "DEMO-004",
+    "category": "Accessories",
+    "price": 89.99,
+    "currency": "AUD",
+    "image": "",
+    "productUrl": "",
+    "offers": [],
+    "demo": true
+  }
+]
