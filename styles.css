@@ -1040,3 +1040,63 @@ input:focus-visible {
   }
 
 }
+
+/* ========================================
+   HEADER NAVIGATION — ABOUT US
+======================================== */
+
+.header {
+  position: relative;
+}
+
+/* Keep the About Us link on the far right */
+.header-nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.header-nav-link {
+  display: inline-block;
+  padding: 10px 18px;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid #ff6a00;
+  border-radius: 5px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.header-nav-link:hover,
+.header-nav-link:focus-visible {
+  background-color: #ff6a00;
+  border-color: #ff6a00;
+  color: #111111;
+}
+
+/* Keep the header usable on smaller screens */
+@media (max-width: 600px) {
+  .header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-tagline {
+    display: none;
+  }
+
+  .header-nav {
+    margin-left: auto;
+  }
+
+  .header-nav-link {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
