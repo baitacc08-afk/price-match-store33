@@ -19,14 +19,20 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+button,
+input {
+  font: inherit;
+}
+
 .header {
-  height: 76px;
-  padding: 0 7%;
+  min-height: 76px;
+  padding: 15px 7%;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
 }
 
 .logo {
@@ -85,6 +91,7 @@ body {
 
 #search:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px #2457e61a;
 }
 
 .catalogue {
@@ -124,6 +131,11 @@ body {
   background: white;
   color: var(--text);
   cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.category:hover {
+  border-color: var(--primary);
 }
 
 .category.active {
@@ -144,12 +156,19 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px #18223010;
+  border-color: #cbd5e5;
+}
+
+.product-card:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
 }
 
 .product-image {
@@ -159,6 +178,7 @@ body {
   background: #f0f3f8;
   color: var(--muted);
   font-size: 13px;
+  overflow: hidden;
 }
 
 .product-image img {
@@ -184,6 +204,7 @@ body {
   margin: 12px 0;
   font-size: 16px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .product-brand {
@@ -195,11 +216,13 @@ body {
   margin: 20px 0 6px;
   font-size: 25px;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .price-label {
   color: var(--muted);
   font-size: 11px;
+  line-height: 1.5;
 }
 
 .compare-button {
@@ -215,6 +238,114 @@ body {
   text-align: center;
   text-decoration: none;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.compare-button:hover {
+  background: #1945c4;
+}
+
+.compare-button:focus-visible,
+.retailer-link:focus-visible,
+.modal-close:focus-visible {
+  outline: 3px solid #91aaff;
+  outline-offset: 3px;
+}
+
+.retailer-link {
+  display: block;
+  margin-top: 15px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.retailer-link:hover {
+  text-decoration: underline;
+}
+
+.compare-button:disabled {
+  background: #8b95a5;
+  cursor: not-allowed;
+}
+
+/* Product details window */
+
+.product-modal {
+  width: min(560px, calc(100% - 30px));
+  max-width: 560px;
+  max-height: 88vh;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 80px #0003;
+}
+
+.product-modal::backdrop {
+  background: rgb(12 20 35 / 60%);
+  backdrop-filter: blur(3px);
+}
+
+.modal-close {
+  position: sticky;
+  top: 10px;
+  z-index: 2;
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 10px 10px -50px auto;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: white;
+  color: var(--text);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-product-image,
+.modal-image-fallback {
+  display: grid;
+  width: 100%;
+  height: 300px;
+  padding: 25px;
+  place-items: center;
+  background: #f0f3f8;
+}
+
+.modal-product-image {
+  object-fit: contain;
+}
+
+.modal-image-fallback {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.modal-product-information {
+  padding: 25px 30px 30px;
+}
+
+.modal-product-information h2 {
+  margin: 12px 0;
+  font-size: 25px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.modal-product-information .product-price {
+  margin-top: 24px;
+  font-size: 30px;
+}
+
+.modal-retailer-button {
+  margin-top: 22px;
 }
 
 .empty-state {
@@ -249,15 +380,25 @@ footer {
   }
 
   .header {
-    padding: 0 20px;
+    padding: 15px 20px;
   }
 
   .tagline {
     font-size: 11px;
   }
 
+  .hero {
+    padding: 55px 18px;
+  }
+
   .catalogue {
     padding: 40px 15px 60px;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
   }
 
   .product-image {
@@ -270,6 +411,27 @@ footer {
 
   .product-info h3 {
     font-size: 14px;
+  }
+
+  .product-price {
+    font-size: 21px;
+  }
+
+  .product-modal {
+    max-height: 90vh;
+  }
+
+  .modal-product-image,
+  .modal-image-fallback {
+    height: 230px;
+  }
+
+  .modal-product-information {
+    padding: 22px;
+  }
+
+  .modal-product-information h2 {
+    font-size: 21px;
   }
 }
 
