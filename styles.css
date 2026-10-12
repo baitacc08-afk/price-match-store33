@@ -1517,3 +1517,8 @@ input:focus-visible {
   color: #000000;
 }
 
+.legal-details,
+.legal-details p,
+.legal-details strong {
+    color: #ffffff !important;
+}
