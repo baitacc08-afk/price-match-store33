@@ -1299,3 +1299,58 @@ input:focus-visible {
 .about-hero h1 .about-title-black {
   color: #000000;
 }
+
+/* ========================================
+   FOOTER LEGAL INFORMATION
+======================================== */
+
+.footer-legal {
+  max-width: 850px;
+  margin: 20px auto 0;
+  padding: 20px 20px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.footer-legal p {
+  margin: 0 auto 10px;
+  color: #999999;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.footer-legal .footer-business-details {
+  margin-top: 16px;
+  color: #cccccc;
+}
+
+.footer-legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.footer-legal-links a {
+  color: #ff6a00;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-legal-links a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .footer-legal {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .footer-legal p {
+    font-size: 11px;
+  }
+}
