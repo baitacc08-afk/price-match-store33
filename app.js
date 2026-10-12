@@ -150,31 +150,59 @@ categoryButtons.forEach(button => {
   });
 });
 
-fetch("./products.json")
-  .then(response => {
-    if (!response.ok) throw new Error("Could not load product catalogue.");
-    return response.json();
-  })
-  .then(products => {
-    if (!Array.isArray(products)) {
-      throw new Error("Product catalogue must be a JSON array.");
+Promise.all([
+  fetch("./products.json"),
+  fetch("./supercheap_products.json")
+])
+  .then(async responses => {
+    if (responses.some(response => !response.ok)) {
+      throw new Error("Could not load one or more product catalogues.");
     }
 
-    allProducts = products.filter(product =>
-      product &&
-      typeof product.id === "string" &&
-      typeof product.name === "string"
-    );
+    return Promise.all(responses.map(response => response.json()));
+  })
+  .then(([existingProducts, supercheapProducts]) => {
+    if (!Array.isArray(existingProducts) ||
+        !Array.isArray(supercheapProducts)) {
+      throw new Error("Both catalogues must contain JSON arrays.");
+    }
+
+    // Combine the catalogues and avoid duplicate product IDs.
+    const combinedProducts = [
+      ...existingProducts,
+      ...supercheapProducts
+    ];
+
+    const seenIds = new Set();
+
+    allProducts = combinedProducts.filter(product => {
+      if (
+        !product ||
+        typeof product.id !== "string" ||
+        typeof product.name !== "string" ||
+        seenIds.has(product.id)
+      ) {
+        return false;
+      }
+
+      seenIds.add(product.id);
+      return true;
+    });
 
     renderProducts();
+
+    console.log("Existing products:", existingProducts.length);
+    console.log("Supercheap Auto products:", supercheapProducts.length);
+    console.log("Total unique products:", allProducts.length);
   })
   .catch(error => {
-    console.error(error);
+    console.error("Catalogue loading error:", error);
     resultCount.textContent = "Catalogue unavailable";
+
     productContainer.innerHTML = `
       <div class="empty-state">
         <h3>Unable to load products</h3>
-        <p>Check that products.json exists and contains valid JSON.</p>
+        <p>Check that products.json and supercheap_products.json exist and contain valid JSON.</p>
       </div>
     `;
   });
