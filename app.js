@@ -1,4 +1,5 @@
 "use strict";
+
 const productContainer = document.getElementById("products");
 const searchInput = document.getElementById("search");
 const resultCount = document.getElementById("result-count");
