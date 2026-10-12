@@ -1295,3 +1295,7 @@ input:focus-visible {
     padding: 45px 20px;
   }
 }
+
+.about-hero h1 .about-title-black {
+  color: #000000;
+}
