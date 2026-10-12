@@ -1500,3 +1500,20 @@ input:focus-visible {
     font-size: 21px;
   }
 }
+
+.legal-hero h1 .legal-title-black {
+  color: #000000;
+}
+
+/* LEGAL PAGE — BLACK TEXT */
+
+.legal-hero > p:last-child,
+.legal-section p,
+.legal-cta p {
+  color: #000000;
+}
+
+.legal-details strong {
+  color: #000000;
+}
+
