@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price Match Store</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <a class="logo" href="index.html">PRICE<span>MATCH</span></a>
+    <span class="tagline">Find products. Compare prices.</span>
+  </header>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">YOUR PERSONAL PRODUCT CATALOGUE</p>
+      <h1>Find the right product<br>at the right price.</h1>
+      <p>Browse products and compare verified retailer offers.</p>
+      <input
+        id="search"
+        type="search"
+        placeholder="Search products, brands or product codes..."
+        aria-label="Search products"
+      >
+    </section>
+    <section class="catalogue">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">PRODUCT CATALOGUE</p>
+          <h2>Browse products</h2>
+        </div>
+        <span id="result-count">Loading products...</span>
+      </div>
+      <nav id="categories" class="categories" aria-label="Product categories">
+        <button class="category active" data-category="All">All products</button>
+        <button class="category" data-category="Oils & Fluids">Oils & Fluids</button>
+        <button class="category" data-category="Tools">Tools</button>
+        <button class="category" data-category="Accessories">Accessories</button>
+      </nav>
+      <div id="products" class="product-grid" aria-live="polite"></div>
+    </section>
+  </main>
+  <footer>
+    <p>Price Match Store · Independent product research</p>
+    <p>Prices shown for demonstration are illustrative, not live offers.</p>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>
