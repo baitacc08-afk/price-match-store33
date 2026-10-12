@@ -3,109 +3,199 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EMS Auto Parts | Automotive Products</title>
 
-<meta
-name=“description”
-content=“Explore the EMS Auto Parts catalogue to find automotive products, tools, oils, fluids and accessories.”
+  <title>EMS Auto Parts | Quality Parts, Better Prices</title>
 
-  <meta name="theme-color" content="#111827">
+  <meta
+    name="description"
+    content="Explore EMS Auto Parts for automotive products, tools, oils, fluids and accessories."
+  >
+
+  <meta name="theme-color" content="#111111">
+
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-  <!-- Website Header -->
+
+  <!-- =========================
+       WEBSITE HEADER
+  ========================== -->
   <header class="header">
     <a class="logo" href="index.html" aria-label="EMS Auto Parts home">
-      EMS Auto Parts
+      <span class="logo-ems">EMS</span>
+      <span class="logo-auto">AUTO PARTS</span>
     </a>
-  </header>
-  <main>
-<!-- Hero Section -->
-<section class="hero">
-  <p class="eyebrow">YOUR PERSONAL PRODUCT CATALOGUE</p>
-  <h1>
-    Lowest Prices<br>
-    Guaranteed
-  </h1>
-  <p>
-    Find automotive products, compare options and discover the parts you need.
-  </p>
-  <input
-    id="search"
-    type="search"
-    placeholder="Search products, brands or product codes..."
-    aria-label="Search products"
-    autocomplete="off"
-  >
-</section>
-<!-- Product Catalogue -->
-<section class="catalogue">
-  <div class="section-heading">
-    <div>
-      <p class="eyebrow">EMS AUTO PARTS</p>
-      <h2>Browse Products</h2>
+
+    <div class="header-tagline">
+      QUALITY PARTS. BETTER PRICES.
     </div>
-    <span id="result-count" aria-live="polite">
-      Loading products...
-    </span>
-  </div>
-  <!-- Product Categories -->
-  <nav
-    id="categories"
-    class="categories"
-    aria-label="Product categories"
-  >
-    <button
-      type="button"
-      class="category active"
-      data-category="All"
-      aria-pressed="true"
+  </header>
+
+
+  <!-- =========================
+       BRAND BANNER
+  ========================== -->
+  <section class="brand-banner" aria-label="EMS Auto Parts banner">
+    <img
+      src="emsbanner.png"
+      alt="EMS Auto Parts — Quality Parts. Better Prices."
+      fetchpriority="high"
     >
-      All Products
-    </button>
-    <button
-      type="button"
-      class="category"
-      data-category="Oils & Fluids"
-      aria-pressed="false"
-    >
-      Oils &amp; Fluids
-    </button>
-    <button
-      type="button"
-      class="category"
-      data-category="Tools"
-      aria-pressed="false"
-    >
-      Tools
-    </button>
-    <button
-      type="button"
-      class="category"
-      data-category="Accessories"
-      aria-pressed="false"
-    >
-      Accessories
-    </button>
-  </nav>
-  <!-- Products are populated by app.js -->
-  <div
-    id="products"
-    class="product-grid"
-    aria-live="polite"
-  ></div>
-</section>
+  </section>
+
+
+  <main>
+
+    <!-- =========================
+         HERO AND SEARCH
+    ========================== -->
+    <section class="hero">
+
+      <div class="hero-content">
+
+        <p class="eyebrow">
+          YOUR PERSONAL PRODUCT CATALOGUE
+        </p>
+
+        <h1>
+          Find Your Parts.<br>
+          <span>Get Better Prices.</span>
+        </h1>
+
+        <p class="hero-description">
+          Search automotive products, browse categories and find
+          the parts, tools and accessories you need.
+        </p>
+
+        <div class="search-wrapper">
+          <span class="search-icon" aria-hidden="true">
+            &#128269;
+          </span>
+
+          <input
+            id="search"
+            type="search"
+            placeholder="Search products, brands or product codes..."
+            aria-label="Search products"
+            autocomplete="off"
+          >
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         PRODUCT CATALOGUE
+    ========================== -->
+    <section class="catalogue">
+
+      <div class="section-heading">
+
+        <div>
+          <p class="eyebrow">
+            EXPLORE OUR RANGE
+          </p>
+
+          <h2>
+            Product Catalogue
+          </h2>
+
+          <p class="section-description">
+            Find products by category or search for something specific.
+          </p>
+        </div>
+
+        <span id="result-count" aria-live="polite">
+          Loading products...
+        </span>
+
+      </div>
+
+
+      <!-- PRODUCT CATEGORY FILTERS -->
+      <nav
+        id="categories"
+        class="categories"
+        aria-label="Product categories"
+      >
+
+        <button
+          type="button"
+          class="category active"
+          data-category="All"
+          aria-pressed="true"
+        >
+          All Products
+        </button>
+
+        <button
+          type="button"
+          class="category"
+          data-category="Oils & Fluids"
+          aria-pressed="false"
+        >
+          Oils &amp; Fluids
+        </button>
+
+        <button
+          type="button"
+          class="category"
+          data-category="Tools"
+          aria-pressed="false"
+        >
+          Tools
+        </button>
+
+        <button
+          type="button"
+          class="category"
+          data-category="Accessories"
+          aria-pressed="false"
+        >
+          Accessories
+        </button>
+
+      </nav>
+
+
+      <!-- PRODUCTS ARE LOADED BY app.js -->
+      <div
+        id="products"
+        class="product-grid"
+        aria-live="polite"
+      ></div>
+
+    </section>
+
   </main>
-  <!-- Website Footer -->
+
+
+  <!-- =========================
+       FOOTER
+  ========================== -->
   <footer class="footer">
-    <p>
-      &copy; 2026 EMS Auto Parts
+
+    <div class="footer-brand">
+      <span class="footer-ems">EMS</span>
+      <span class="footer-auto">AUTO PARTS</span>
+    </div>
+
+    <p class="footer-tagline">
+      QUALITY PARTS. BETTER PRICES.
     </p>
-<p>
-  Automotive products, tools and accessories.
-</p>
+
+    <p class="footer-copyright">
+      &copy; 2026 EMS Auto Parts. All rights reserved.
+    </p>
+
   </footer>
-  <!-- Existing Product Catalogue Script -->
+
+
+  <!-- EXISTING PRODUCT CATALOGUE SCRIPT -->
   <script src="app.js"></script>
+
 </body>
 </html>
