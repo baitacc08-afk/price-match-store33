@@ -3,46 +3,109 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EMS Auto Parts</title>
+  <title>EMS Auto Parts | Automotive Products</title>
+
+<meta
+name=“description”
+content=“Explore the EMS Auto Parts catalogue to find automotive products, tools, oils, fluids and accessories.”
+
+  <meta name="theme-color" content="#111827">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Website Header -->
   <header class="header">
-    <a class="logo" href="index.html">EMS Auto Parts</span></a>
+    <a class="logo" href="index.html" aria-label="EMS Auto Parts home">
+      EMS Auto Parts
+    </a>
   </header>
   <main>
-    <section class="hero">
-      <p class="eyebrow">YOUR PERSONAL PRODUCT CATALOGUE</p>
-      <h1>Lowest Prices<br>Guaranteed</h1>
-      <p>Browse products and compare verified retailer offers.</p>
-      <input
-        id="search"
-        type="search"
-        placeholder="Search products, brands or product codes..."
-        aria-label="Search products"
-      >
-    </section>
-    <section class="catalogue">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">PRODUCT CATALOGUE</p>
-          <h2>Browse products</h2>
-        </div>
-        <span id="result-count">Loading products...</span>
-      </div>
-      <nav id="categories" class="categories" aria-label="Product categories">
-        <button class="category active" data-category="All">All products</button>
-        <button class="category" data-category="Oils & Fluids">Oils & Fluids</button>
-        <button class="category" data-category="Tools">Tools</button>
-        <button class="category" data-category="Accessories">Accessories</button>
-      </nav>
-      <div id="products" class="product-grid" aria-live="polite"></div>
-    </section>
+<!-- Hero Section -->
+<section class="hero">
+  <p class="eyebrow">YOUR PERSONAL PRODUCT CATALOGUE</p>
+  <h1>
+    Lowest Prices<br>
+    Guaranteed
+  </h1>
+  <p>
+    Find automotive products, compare options and discover the parts you need.
+  </p>
+  <input
+    id="search"
+    type="search"
+    placeholder="Search products, brands or product codes..."
+    aria-label="Search products"
+    autocomplete="off"
+  >
+</section>
+<!-- Product Catalogue -->
+<section class="catalogue">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">EMS AUTO PARTS</p>
+      <h2>Browse Products</h2>
+    </div>
+    <span id="result-count" aria-live="polite">
+      Loading products...
+    </span>
+  </div>
+  <!-- Product Categories -->
+  <nav
+    id="categories"
+    class="categories"
+    aria-label="Product categories"
+  >
+    <button
+      type="button"
+      class="category active"
+      data-category="All"
+      aria-pressed="true"
+    >
+      All Products
+    </button>
+    <button
+      type="button"
+      class="category"
+      data-category="Oils & Fluids"
+      aria-pressed="false"
+    >
+      Oils &amp; Fluids
+    </button>
+    <button
+      type="button"
+      class="category"
+      data-category="Tools"
+      aria-pressed="false"
+    >
+      Tools
+    </button>
+    <button
+      type="button"
+      class="category"
+      data-category="Accessories"
+      aria-pressed="false"
+    >
+      Accessories
+    </button>
+  </nav>
+  <!-- Products are populated by app.js -->
+  <div
+    id="products"
+    class="product-grid"
+    aria-live="polite"
+  ></div>
+</section>
   </main>
-  <footer>
-    <p>Price Match Store · Independent product research</p>
-    <p>Prices shown for demonstration are illustrative, not live offers.</p>
+  <!-- Website Footer -->
+  <footer class="footer">
+    <p>
+      &copy; 2026 EMS Auto Parts
+    </p>
+<p>
+  Automotive products, tools and accessories.
+</p>
   </footer>
+  <!-- Existing Product Catalogue Script -->
   <script src="app.js"></script>
 </body>
 </html>
