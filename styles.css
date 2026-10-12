@@ -440,3 +440,23 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+.modal-description {
+margin-top: 24px;
+padding-top: 20px;
+border-top: 1px solid var(–border);
+}
+
+.modal-description h3 {
+margin: 0 0 12px;
+font-size: 17px;
+}
+
+.modal-description p {
+margin: 0;
+color: var(–muted);
+font-size: 14px;
+line-height: 1.8;
+white-space: pre-line;
+overflow-wrap: anywhere;
+}
