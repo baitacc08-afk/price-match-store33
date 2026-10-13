@@ -330,23 +330,14 @@ function renderProducts() {
     .join("");
 }
 
-// Handle clicks on product cards.
-// Retailer links open normally without triggering the product window.
+// Product detail links navigate to their own EMS Auto Parts page.
+// Supercheap Auto links continue opening the retailer's website.
 productContainer.addEventListener("click", event => {
-  const retailerLink = event.target.closest(".retailer-link");
+  const link = event.target.closest("a");
 
-  if (retailerLink) {
+  if (link) {
     return;
   }
-
-  const card = event.target.closest(".product-card");
-
-  if (!card) {
-    return;
-  }
-
-  const index = Number(card.dataset.productIndex);
-  openProductDetails(allProducts[index]);
 });
 
 // Support keyboard navigation.
