@@ -9,7 +9,6 @@ const searchInput = document.getElementById("search");
 const resultCount = document.getElementById("result-count");
 const categoryContainer = document.getElementById("categories");
 
-// Keep the existing filename so the product data continues to load.
 const CATALOGUE_FILE = "./supercheap_products.json";
 const CART_STORAGE_KEY = "ems-auto-parts-cart";
 
@@ -84,11 +83,7 @@ function getProductImage(product) {
   try {
     const url = new URL(product.image, window.location.href);
 
-    if (
-      url.protocol === "https:" &&
-      (url.hostname === window.location.hostname ||
-        url.hostname.includes("."))
-    ) {
+    if (url.protocol === "https:" || url.origin === window.location.origin) {
       return url.href;
     }
   } catch {
@@ -185,12 +180,16 @@ function addToCart(product) {
   }
 
   const cart = getCart();
+  const discountedPrice = getEMSPrice(product.price);
 
   const existingItem = cart.find(
     item => item.id === product.id
   );
 
   if (existingItem) {
+    // Update the price in case the pricing rule has changed.
+    existingItem.price = discountedPrice;
+    existingItem.currency = product.currency || "AUD";
     existingItem.quantity =
       (Number(existingItem.quantity) || 0) + 1;
   } else {
@@ -198,7 +197,7 @@ function addToCart(product) {
       id: product.id,
       name: product.name || "Unnamed product",
       brand: product.brand || "",
-      price: product.price ?? null,
+      price: discountedPrice,
       currency: product.currency || "AUD",
       image: getProductImage(product),
       productUrl: getProductURL(product),
@@ -315,8 +314,14 @@ function renderProducts() {
         product.category || "Uncategorised"
       );
 
+      // Apply the 75% discount to the displayed price.
+      const discountedPrice = getEMSPrice(product.price);
+
       const price = escapeHTML(
-        formatPrice(product.price, product.currency || "AUD")
+        formatPrice(
+          discountedPrice,
+          product.currency || "AUD"
+        )
       );
 
       const imageURL = getProductImage(product);
@@ -356,7 +361,7 @@ function renderProducts() {
             </p>
 
             <p class="price-label">
-              EMS Auto Parts
+              EMS Auto Parts — 75% off
             </p>
 
             <a
