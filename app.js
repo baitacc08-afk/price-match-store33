@@ -335,22 +335,16 @@ function renderProducts() {
     .join("");
 }
 
-// Links navigate normally. Clicking elsewhere on a card
-// continues opening the existing product details modal.
+// Product detail links navigate to their own EMS Auto Parts page.
+// Supercheap Auto links continue opening the retailer's website.
 productContainer.addEventListener("click", event => {
-  if (event.target.closest("a, button")) {
+  const link = event.target.closest("a");
+
+  if (link) {
     return;
   }
-
-  const card = event.target.closest(".product-card");
-
-  if (!card) {
-    return;
-  }
-
-  const index = Number(card.dataset.productIndex);
-  openProductDetails(allProducts[index]);
 });
+
 // Search products as the user types.
 searchInput.addEventListener("input", renderProducts);
 
