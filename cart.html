@@ -9,6 +9,50 @@
   <link rel="stylesheet" href="./styles.css">
 
   <style>
+    /* HEADER */
+    header {
+      background: #111;
+      color: white;
+      padding: 22px 20px;
+      text-align: center;
+      border-bottom: 4px solid #ff6600;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 2px;
+    }
+
+    header p {
+      margin: 5px 0 0;
+      color: #ff6600;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* NAVIGATION */
+    nav {
+      background: #222;
+      padding: 14px 10px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 25px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      color: #ff6600;
+    }
+
+    /* CART LAYOUT */
     .cart-page {
       width: min(1100px, 92%);
       margin: 40px auto;
@@ -34,6 +78,7 @@
       gap: 16px;
     }
 
+    /* CART ITEMS */
     .cart-item {
       display: grid;
       grid-template-columns: 110px minmax(0, 1fr);
@@ -75,6 +120,7 @@
       margin-top: 12px;
     }
 
+    /* QUANTITY CONTROLS */
     .quantity-control {
       display: inline-flex;
       align-items: center;
@@ -98,6 +144,7 @@
       background: #ddd;
     }
 
+    /* REMOVE BUTTON */
     .remove-button {
       border: none;
       background: transparent;
@@ -107,6 +154,7 @@
       padding: 8px;
     }
 
+    /* ORDER SUMMARY */
     .cart-summary {
       padding: 22px;
       border: 1px solid #ddd;
@@ -140,6 +188,7 @@
       line-height: 1.5;
     }
 
+    /* CART BUTTONS */
     .cart-button {
       display: block;
       width: 100%;
@@ -165,6 +214,12 @@
       color: #222;
     }
 
+    .cart-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* EMPTY CART */
     .empty-cart {
       text-align: center;
       padding: 50px 20px;
@@ -182,6 +237,30 @@
       color: #b42318;
     }
 
+    /* FOOTER */
+    footer {
+      background: #111;
+      color: #ccc;
+      text-align: center;
+      padding: 25px 15px;
+      margin-top: 50px;
+    }
+
+    footer p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    footer a {
+      color: #ff6600;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* TABLET */
     @media (max-width: 750px) {
       .cart-layout {
         grid-template-columns: 1fr;
@@ -189,6 +268,21 @@
 
       .cart-summary {
         position: static;
+      }
+    }
+
+    /* MOBILE */
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 24px;
+      }
+
+      nav {
+        gap: 15px;
+      }
+
+      .cart-page {
+        margin: 25px auto;
       }
     }
 
@@ -209,36 +303,21 @@
 
 <body>
 
-<!-- SHARED HEADER -->
-<header class="header">
+  <!-- HEADER -->
+  <header>
+    <h1>EMS AUTO PARTS</h1>
+    <p>QUALITY PARTS. BETTER PRICES.</p>
+  </header>
 
-  <a class="logo" href="./index.html" aria-label="EMS Auto Parts home">
-    <span class="logo-ems">EMS</span>
-    <span class="logo-auto">AUTO PARTS</span>
-  </a>
-
-  <div class="header-tagline">
-    QUALITY PARTS. BETTER PRICES.
-  </div>
-
-  <nav class="header-nav" aria-label="Main navigation">
-
-    <a class="header-nav-link" href="./about.html">
-      About Us
-    </a>
-
-    <a
-      class="header-nav-link cart-nav-link"
-      href="./cart.html"
-      aria-current="page"
-    >
-      🛒 Cart <span id="cart-count">0</span>
-    </a>
-
+  <!-- NAVIGATION -->
+  <nav aria-label="Main navigation">
+    <a href="./index.html">Home</a>
+    <a href="./about.html">About Us</a>
+    <a href="./cart.html" aria-current="page">Cart</a>
+    <a href="./legal.html">Legal & Information</a>
   </nav>
 
-</header>
-
+  <!-- CART CONTENT -->
   <main class="cart-page">
 
     <div class="cart-heading">
@@ -248,6 +327,7 @@
 
     <div class="cart-layout">
 
+      <!-- CART ITEMS -->
       <section
         id="cart-items"
         class="cart-items"
@@ -257,7 +337,9 @@
         <p>Loading your cart...</p>
       </section>
 
+      <!-- ORDER SUMMARY -->
       <aside class="cart-summary">
+
         <h2>Order Summary</h2>
 
         <div class="summary-row">
@@ -293,12 +375,14 @@
           role="status"
           aria-live="polite"
         ></p>
+
       </aside>
 
     </div>
 
   </main>
 
+  <!-- CART FUNCTIONALITY -->
   <script>
     "use strict";
 
@@ -345,6 +429,7 @@
               Math.floor(Number(item.quantity) || 1)
             )
           }));
+
       } catch (error) {
         console.error("Could not read cart:", error);
         return [];
@@ -362,6 +447,7 @@
         renderCart();
 
         return true;
+
       } catch (error) {
         console.error("Could not save cart:", error);
 
@@ -387,6 +473,7 @@
           style: "currency",
           currency
         }).format(Number(price));
+
       } catch {
         return null;
       }
@@ -399,6 +486,7 @@
         if (url.protocol === "https:") {
           return url.href;
         }
+
       } catch {
         return "";
       }
@@ -416,6 +504,7 @@
         ) {
           return url.href;
         }
+
       } catch {
         return "";
       }
@@ -453,11 +542,15 @@
         0
       );
 
-      cartCountElement.textContent = totalQuantity;
+      if (cartCountElement) {
+        cartCountElement.textContent = totalQuantity;
+      }
+
       summaryCountElement.textContent = totalQuantity;
 
       clearCartButton.disabled = cart.length === 0;
 
+      /* EMPTY CART DISPLAY */
       if (cart.length === 0) {
         cartItemsElement.innerHTML = `
           <div class="empty-cart">
@@ -470,17 +563,22 @@
         `;
 
         cartTotalElement.textContent = "$0.00";
+
         cartNoteElement.textContent =
           "Add products from the catalogue to get started.";
 
         return;
       }
 
+      /* CALCULATE TOTALS */
       let knownSubtotal = 0;
       let unknownPriceCount = 0;
 
       cart.forEach(item => {
-        const price = formatPrice(item.price, item.currency || "AUD");
+        const price = formatPrice(
+          item.price,
+          item.currency || "AUD"
+        );
 
         if (price === null) {
           unknownPriceCount += item.quantity;
@@ -499,10 +597,16 @@
           ? `${unknownPriceCount} item(s) have no catalogue price. The total is incomplete.`
           : "This is an estimate based on saved catalogue prices, not a confirmed retailer quote.";
 
+      /* DISPLAY CART ITEMS */
       cartItemsElement.innerHTML = cart.map(item => {
         const name = escapeHTML(item.name);
-        const brand = escapeHTML(item.brand || "Brand unavailable");
+
+        const brand = escapeHTML(
+          item.brand || "Brand unavailable"
+        );
+
         const image = getSafeImage(item.image);
+
         const retailerURL = getSafeProductURL(item.productUrl);
 
         const unitPrice = formatPrice(
@@ -528,17 +632,21 @@
             >
           `
           : `
-            <div class="cart-item-image"
-              style="display:grid;place-items:center;text-align:center;font-size:12px">
+            <div
+              class="cart-item-image"
+              style="display:grid;place-items:center;text-align:center;font-size:12px"
+            >
               No image
             </div>
           `;
 
         return `
           <article class="cart-item">
+
             ${imageHTML}
 
             <div class="cart-item-information">
+
               <h2>${name}</h2>
 
               <p class="cart-item-brand">${brand}</p>
@@ -552,10 +660,12 @@
               </p>
 
               <div class="cart-item-controls">
+
                 <div
                   class="quantity-control"
                   aria-label="Quantity for ${name}"
                 >
+
                   <button
                     type="button"
                     data-action="decrease"
@@ -571,6 +681,7 @@
                     data-id="${escapeHTML(item.id)}"
                     aria-label="Increase quantity of ${name}"
                   >+</button>
+
                 </div>
 
                 <button
@@ -595,13 +706,17 @@
                     `
                     : ""
                 }
+
               </div>
+
             </div>
+
           </article>
         `;
       }).join("");
     }
 
+    /* HANDLE QUANTITY AND REMOVE BUTTONS */
     cartItemsElement.addEventListener("click", event => {
       const button = event.target.closest("button[data-action]");
 
@@ -614,13 +729,16 @@
 
       if (action === "increase") {
         updateQuantity(id, 1);
+
       } else if (action === "decrease") {
         updateQuantity(id, -1);
+
       } else if (action === "remove") {
         removeItem(id);
       }
     });
 
+    /* EMPTY CART BUTTON */
     clearCartButton.addEventListener("click", () => {
       const cart = getCart();
 
@@ -633,14 +751,27 @@
       }
     });
 
+    /* SYNC CART BETWEEN TABS */
     window.addEventListener("storage", event => {
       if (event.key === CART_STORAGE_KEY) {
         renderCart();
       }
     });
 
+    /* INITIALISE CART */
     renderCart();
   </script>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>&copy; 2026 EMS Auto Parts. All rights reserved.</p>
+
+    <p>
+      <a href="./index.html">Home</a> |
+      <a href="./about.html">About Us</a> |
+      <a href="./legal.html">Legal & Information</a>
+    </p>
+  </footer>
 
 </body>
 </html>
