@@ -1626,3 +1626,44 @@ outline-offset: 3px;
   font-weight: 800;
   margin: 18px 0;
 }
+
+.detail-price-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 18px 0;
+}
+
+.detail-discount-badge {
+  display: inline-block;
+  background: #ff6b00;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.detail-original-price {
+  margin: 0;
+  color: #999999;
+  font-size: 1.05rem;
+  text-decoration: line-through;
+}
+
+.detail-price-section .detail-price {
+  display: block;
+  margin: 0;
+  color: #ff6b00;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.detail-savings {
+  margin: 0;
+  color: #22a06b;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
