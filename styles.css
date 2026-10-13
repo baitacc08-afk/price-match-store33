@@ -1523,14 +1523,28 @@ input:focus-visible {
     color: #ffffff !important;
 }
 
-/* Legal page return section — force all text to white */
-.legal-cta,
-.legal-cta h2,
-.legal-cta p,
-.legal-cta a,
-.legal-cta a:visited,
-.legal-cta a:hover,
-.legal-cta a:focus,
-.legal-cta a:active {
+/* FORCE LEGAL PAGE RETURN SECTION TEXT TO WHITE */
+
+body .legal-page .legal-cta h2 {
+    color: #ffffff !important;
+}
+
+body .legal-page .legal-cta p {
+    color: #ffffff !important;
+}
+
+body .legal-page .legal-cta a {
+    color: #ffffff !important;
+}
+
+body .legal-page .legal-cta a:visited,
+body .legal-page .legal-cta a:hover,
+body .legal-page .legal-cta a:focus,
+body .legal-page .legal-cta a:active {
+    color: #ffffff !important;
+}
+
+/* Keep the Browse Products button background orange */
+body .legal-page .legal-cta .legal-cta-button {
     color: #ffffff !important;
 }
