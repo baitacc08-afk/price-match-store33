@@ -1,206 +1,233 @@
 <!DOCTYPE html>
-<html lang="en-AU">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Product Details | EMS Auto Parts</title>
+  <meta name="theme-color" content="#111111">
 
-<meta
-name=“description”
-content=“Browse automotive products at EMS Auto Parts. View product details and add items to your shopping cart.”
+  <title>Product Details | EMS Auto Parts</title>
+  <meta name="description" content="View product details at EMS Auto Parts. Quality parts. Better prices.">
 
   <link rel="stylesheet" href="./styles.css">
+
   <style>
     * {
       box-sizing: border-box;
     }
+
     body {
       margin: 0;
+      background: #f5f5f5;
+      color: #222;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.6;
     }
-    .detail-page {
-      width: min(1100px, 92%);
-      margin: 40px auto;
+
+    /* HEADER — MATCHES THE OTHER EMS PAGES */
+    header {
+      background: #111;
+      color: white;
+      padding: 22px 20px;
+      text-align: center;
+      border-bottom: 4px solid #ff6600;
     }
-    .detail-breadcrumb {
-      margin-bottom: 24px;
-      font-size: 14px;
-    }
-    .detail-breadcrumb a {
-      color: inherit;
+
+    header a {
+      display: inline-block;
+      color: white;
       text-decoration: none;
     }
-    .detail-breadcrumb a:hover {
+
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 2px;
+    }
+
+    header p {
+      margin: 5px 0 0;
+      color: #ff6600;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* NAVIGATION — MATCHES THE OTHER EMS PAGES */
+    nav {
+      background: #222;
+      padding: 14px 10px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 25px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+      transition: color 0.2s ease;
+    }
+
+    nav a:hover,
+    nav a[aria-current="page"] {
+      color: #ff6600;
+    }
+
+    /* MAIN CONTENT */
+    main {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px 50px;
+      min-height: 60vh;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #e65c00;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .back-link:hover {
       text-decoration: underline;
     }
-    .detail-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 36px;
-      align-items: start;
-      padding: 28px;
-      border: 1px solid var(--border-color, #ddd);
-      border-radius: 12px;
-      background: var(--card-background, #fff);
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-    }
-    .detail-product-visual {
-      min-width: 0;
-    }
-    .detail-image-container {
-      display: grid;
-      place-items: center;
-      min-height: 320px;
-      padding: 20px;
-      border-radius: 10px;
-      background: #f7f7f7;
-    }
-    .detail-image {
-      display: block;
+
+    #product-detail {
       width: 100%;
-      max-height: 430px;
+    }
+
+    /* General product detail styling */
+    #product-detail img {
+      max-width: 100%;
+      height: auto;
       object-fit: contain;
     }
-    .detail-image-fallback {
-      display: none;
-      padding: 30px;
-      color: #666;
-      text-align: center;
-    }
-    .detail-product-information {
-      min-width: 0;
-    }
-    .detail-category {
-      margin: 0 0 12px;
-      color: #666;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      overflow-wrap: anywhere;
-    }
-    .detail-title {
-      margin: 0 0 18px;
-      font-size: clamp(24px, 3vw, 34px);
-      line-height: 1.25;
-      overflow-wrap: anywhere;
-    }
-    .detail-brand,
-    .detail-sku,
-    .detail-description {
-      line-height: 1.7;
-      overflow-wrap: anywhere;
-    }
-    .detail-description h2 {
-      font-size: 20px;
-    }
-    .detail-price {
-      margin: 24px 0 8px;
-      font-size: 28px;
-      font-weight: 700;
-      overflow-wrap: anywhere;
-    }
-    .detail-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 28px;
-    }
-    .detail-add-to-cart-button {
-      display: inline-block;
-      padding: 14px 22px;
-      border: 2px solid #000;
-      border-radius: 8px;
-      background: #000;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 700;
-      text-align: center;
+
+    #product-detail button,
+    #product-detail .button,
+    #product-detail a.button {
       cursor: pointer;
-      transition: background-color 0.2s ease;
     }
-    .detail-add-to-cart-button:hover {
-      border-color: #222;
-      background: #222;
-      color: #fff;
+
+    .page-heading {
+      margin: 0 0 8px;
+      font-size: 28px;
+      color: #111;
     }
-    .detail-add-to-cart-button:focus-visible,
-    .detail-back-button:focus-visible {
-      outline: 3px solid #777;
-      outline-offset: 3px;
+
+    .page-description {
+      margin: 0 0 25px;
+      color: #666;
     }
-    .detail-add-to-cart-button:disabled {
-      opacity: 0.75;
-      cursor: default;
-    }
-    .detail-back-button {
-      display: inline-block;
-      padding: 14px 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: transparent;
-      color: inherit;
-      font-weight: 600;
+
+    /* FOOTER — MATCHES THE OTHER EMS PAGES */
+    footer {
+      background: #111;
+      color: #ccc;
       text-align: center;
+      padding: 25px 15px;
+      border-top: 4px solid #ff6600;
+      margin-top: 30px;
+    }
+
+    footer p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    footer a {
+      color: #ff6600;
       text-decoration: none;
     }
-    .detail-back-button:hover {
-      background: rgba(127, 127, 127, 0.1);
+
+    footer a:hover {
+      text-decoration: underline;
     }
-    .detail-status {
-      padding: 40px 20px;
-      text-align: center;
-      line-height: 1.7;
-    }
-    .detail-status h1 {
-      margin-bottom: 12px;
-    }
-    .detail-status a {
-      display: inline-block;
-      margin-top: 14px;
-    }
-    @media (max-width: 700px) {
-      .detail-page {
-        margin: 24px auto;
+
+    /* MOBILE LAYOUT */
+    @media (max-width: 600px) {
+      header {
+        padding: 20px 12px;
       }
-      .detail-panel {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 24px;
-        padding: 18px;
+
+      header h1 {
+        font-size: 25px;
       }
-      .detail-image-container {
-        min-height: 220px;
+
+      header p {
+        font-size: 12px;
       }
-      .detail-actions {
-        flex-direction: column;
+
+      nav {
+        gap: 12px 18px;
+        padding: 14px 8px;
       }
-      .detail-actions a,
-      .detail-actions button {
-        width: 100%;
+
+      nav a {
+        font-size: 13px;
+      }
+
+      main {
+        padding: 22px 14px 35px;
+      }
+
+      .page-heading {
+        font-size: 24px;
       }
     }
   </style>
 </head>
+
 <body>
-<header>
-  <a href="./index.html" aria-label="EMS Auto Parts home" style="text-decoration:none;color:white;">
-    <h1 style="margin:0;font-size:30px;letter-spacing:2px;">EMS AUTO PARTS</h1>
-    <p style="margin:5px 0 0;color:#ff6600;font-weight:bold;letter-spacing:1px;">
-      QUALITY PARTS. BETTER PRICES.
-    </p>
-  </a>
-</header>
-  <main class="detail-page">
-    <nav class="detail-breadcrumb" aria-label="Breadcrumb">
-      <a href="./index.html">Home</a>
-      <span aria-hidden="true"> / </span>
-      <span>Product details</span>
-    </nav>
-<section id="product-detail" aria-live="polite">
-  <div class="detail-status">
-    <h1>Loading product...</h1>
-    <p>Please wait while the product information loads.</p>
-  </div>
-</section>
+
+  <!-- EMS AUTO PARTS HEADER -->
+  <header>
+    <a href="./index.html" aria-label="EMS Auto Parts home">
+      <h1>EMS AUTO PARTS</h1>
+      <p>QUALITY PARTS. BETTER PRICES.</p>
+    </a>
+  </header>
+
+  <!-- MAIN NAVIGATION -->
+  <nav aria-label="Main navigation">
+    <a href="./index.html">Home</a>
+    <a href="./about.html">About Us</a>
+    <a href="./cart.html">Cart</a>
+    <a href="./legal.html">Legal &amp; Information</a>
+  </nav>
+
+  <!-- PRODUCT CONTENT -->
+  <main>
+    <a class="back-link" href="./index.html">&larr; Back to products</a>
+
+    <div id="product-detail">
+      <p>Loading product details...</p>
+    </div>
   </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p><strong>EMS AUTO PARTS</strong></p>
+    <p>QUALITY PARTS. BETTER PRICES.</p>
+    <p>
+      <a href="./index.html">Home</a> |
+      <a href="./about.html">About Us</a> |
+      <a href="./cart.html">Cart</a> |
+      <a href="./legal.html">Legal &amp; Information</a>
+    </p>
+    <p>&copy; <span id="current-year"></span> EMS Auto Parts. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.getElementById("current-year").textContent =
+      new Date().getFullYear();
+  </script>
+
+  <!-- KEEP THE EXISTING PRODUCT SCRIPT -->
   <script src="./product.js" defer></script>
+
 </body>
 </html>
