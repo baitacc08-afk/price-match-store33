@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Shopping Cart | EMS Auto Parts</title>
+
+  <link rel="stylesheet" href="./styles.css">
+
+  <style>
+    .cart-page {
+      width: min(1100px, 92%);
+      margin: 40px auto;
+    }
+
+    .cart-heading {
+      margin-bottom: 25px;
+    }
+
+    .cart-heading h1 {
+      margin-bottom: 8px;
+    }
+
+    .cart-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 25px;
+      align-items: start;
+    }
+
+    .cart-items {
+      display: grid;
+      gap: 16px;
+    }
+
+    .cart-item {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .cart-item-image {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #f5f5f5;
+    }
+
+    .cart-item h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .cart-item-brand {
+      margin: 0 0 8px;
+      color: #666;
+    }
+
+    .cart-item-price {
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .cart-item-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .quantity-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 4px 8px;
+    }
+
+    .quantity-control button {
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      background: #eee;
+    }
+
+    .quantity-control button:hover {
+      background: #ddd;
+    }
+
+    .remove-button {
+      border: none;
+      background: transparent;
+      color: #b42318;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 8px;
+    }
+
+    .cart-summary {
+      padding: 22px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fff;
+      position: sticky;
+      top: 20px;
+    }
+
+    .cart-summary h2 {
+      margin-top: 0;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .cart-total {
+      border-top: 1px solid #ddd;
+      padding-top: 16px;
+      font-size: 1.15rem;
+      font-weight: bold;
+    }
+
+    .cart-note {
+      font-size: 0.9rem;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .cart-button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px 16px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .cart-button:hover {
+      opacity: 0.85;
+    }
+
+    .cart-button-secondary {
+      background: #eee;
+      color: #222;
+    }
+
+    .empty-cart {
+      text-align: center;
+      padding: 50px 20px;
+      border: 1px dashed #ccc;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .empty-cart h2 {
+      margin-top: 0;
+    }
+
+    .cart-message {
+      margin-top: 15px;
+      color: #b42318;
+    }
+
+    @media (max-width: 750px) {
+      .cart-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-summary {
+        position: static;
+      }
+    }
+
+    @media (max-width: 450px) {
+      .cart-item {
+        grid-template-columns: 75px minmax(0, 1fr);
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .cart-item-image {
+        width: 75px;
+        height: 75px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <nav class="header-nav" aria-label="Main navigation">
+      <a class="header-nav-link" href="./index.html">
+        Home
+      </a>
+
+      <a class="header-nav-link" href="./about.html">
+        About Us
+      </a>
+
+      <a
+        class="header-nav-link cart-nav-link"
+        href="./cart.html"
+        aria-current="page"
+      >
+        🛒 Cart <span id="cart-count">0</span>
+      </a>
+    </nav>
+  </header>
+
+  <main class="cart-page">
+
+    <div class="cart-heading">
+      <h1>Your Shopping Cart</h1>
+      <p>Review your selected products and update quantities.</p>
+    </div>
+
+    <div class="cart-layout">
+
+      <section
+        id="cart-items"
+        class="cart-items"
+        aria-label="Products in your cart"
+        aria-live="polite"
+      >
+        <p>Loading your cart...</p>
+      </section>
+
+      <aside class="cart-summary">
+        <h2>Order Summary</h2>
+
+        <div class="summary-row">
+          <span>Items</span>
+          <span id="summary-count">0</span>
+        </div>
+
+        <div class="summary-row cart-total">
+          <span>Estimated total</span>
+          <span id="cart-total">Unavailable</span>
+        </div>
+
+        <p class="cart-note" id="cart-note">
+          Prices are shown only when available in the catalogue.
+          Retailer prices and availability may differ.
+        </p>
+
+        <a class="cart-button" href="./index.html">
+          Continue Shopping
+        </a>
+
+        <button
+          type="button"
+          id="clear-cart"
+          class="cart-button cart-button-secondary"
+        >
+          Empty Cart
+        </button>
+
+        <p
+          id="cart-message"
+          class="cart-message"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </aside>
+
+    </div>
+
+  </main>
+
+  <script>
+    "use strict";
+
+    const CART_STORAGE_KEY = "ems-auto-parts-cart";
+
+    const cartItemsElement = document.getElementById("cart-items");
+    const cartCountElement = document.getElementById("cart-count");
+    const summaryCountElement = document.getElementById("summary-count");
+    const cartTotalElement = document.getElementById("cart-total");
+    const cartNoteElement = document.getElementById("cart-note");
+    const cartMessageElement = document.getElementById("cart-message");
+    const clearCartButton = document.getElementById("clear-cart");
+
+    function escapeHTML(value = "") {
+      return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[character]);
+    }
+
+    function getCart() {
+      try {
+        const cart = JSON.parse(
+          localStorage.getItem(CART_STORAGE_KEY) || "[]"
+        );
+
+        if (!Array.isArray(cart)) {
+          return [];
+        }
+
+        return cart
+          .filter(item =>
+            item &&
+            typeof item.id === "string" &&
+            typeof item.name === "string"
+          )
+          .map(item => ({
+            ...item,
+            quantity: Math.max(
+              1,
+              Math.floor(Number(item.quantity) || 1)
+            )
+          }));
+      } catch (error) {
+        console.error("Could not read cart:", error);
+        return [];
+      }
+    }
+
+    function saveCart(cart) {
+      try {
+        localStorage.setItem(
+          CART_STORAGE_KEY,
+          JSON.stringify(cart)
+        );
+
+        cartMessageElement.textContent = "";
+        renderCart();
+
+        return true;
+      } catch (error) {
+        console.error("Could not save cart:", error);
+
+        cartMessageElement.textContent =
+          "Could not save your changes. Check your browser storage.";
+
+        return false;
+      }
+    }
+
+    function formatPrice(price, currency = "AUD") {
+      if (
+        price === null ||
+        price === undefined ||
+        price === "" ||
+        !Number.isFinite(Number(price))
+      ) {
+        return null;
+      }
+
+      try {
+        return new Intl.NumberFormat("en-AU", {
+          style: "currency",
+          currency
+        }).format(Number(price));
+      } catch {
+        return null;
+      }
+    }
+
+    function getSafeImage(image) {
+      try {
+        const url = new URL(image);
+
+        if (url.protocol === "https:") {
+          return url.href;
+        }
+      } catch {
+        return "";
+      }
+
+      return "";
+    }
+
+    function getSafeProductURL(productUrl) {
+      try {
+        const url = new URL(productUrl);
+
+        if (
+          url.protocol === "https:" &&
+          url.hostname === "www.supercheapauto.com.au"
+        ) {
+          return url.href;
+        }
+      } catch {
+        return "";
+      }
+
+      return "";
+    }
+
+    function updateQuantity(id, change) {
+      const cart = getCart();
+      const item = cart.find(product => product.id === id);
+
+      if (!item) {
+        return;
+      }
+
+      item.quantity += change;
+
+      if (item.quantity <= 0) {
+        return removeItem(id);
+      }
+
+      saveCart(cart);
+    }
+
+    function removeItem(id) {
+      const cart = getCart().filter(item => item.id !== id);
+      saveCart(cart);
+    }
+
+    function renderCart() {
+      const cart = getCart();
+
+      const totalQuantity = cart.reduce(
+        (total, item) => total + item.quantity,
+        0
+      );
+
+      cartCountElement.textContent = totalQuantity;
+      summaryCountElement.textContent = totalQuantity;
+
+      clearCartButton.disabled = cart.length === 0;
+
+      if (cart.length === 0) {
+        cartItemsElement.innerHTML = `
+          <div class="empty-cart">
+            <h2>Your cart is empty</h2>
+            <p>You haven't added any products yet.</p>
+            <a class="cart-button" href="./index.html">
+              Browse Products
+            </a>
+          </div>
+        `;
+
+        cartTotalElement.textContent = "$0.00";
+        cartNoteElement.textContent =
+          "Add products from the catalogue to get started.";
+
+        return;
+      }
+
+      let knownSubtotal = 0;
+      let unknownPriceCount = 0;
+
+      cart.forEach(item => {
+        const price = formatPrice(item.price, item.currency || "AUD");
+
+        if (price === null) {
+          unknownPriceCount += item.quantity;
+        } else {
+          knownSubtotal += Number(item.price) * item.quantity;
+        }
+      });
+
+      cartTotalElement.textContent =
+        unknownPriceCount > 0
+          ? "Incomplete"
+          : formatPrice(knownSubtotal, "AUD");
+
+      cartNoteElement.textContent =
+        unknownPriceCount > 0
+          ? `${unknownPriceCount} item(s) have no catalogue price. The total is incomplete.`
+          : "This is an estimate based on saved catalogue prices, not a confirmed retailer quote.";
+
+      cartItemsElement.innerHTML = cart.map(item => {
+        const name = escapeHTML(item.name);
+        const brand = escapeHTML(item.brand || "Brand unavailable");
+        const image = getSafeImage(item.image);
+        const retailerURL = getSafeProductURL(item.productUrl);
+
+        const unitPrice = formatPrice(
+          item.price,
+          item.currency || "AUD"
+        );
+
+        const linePrice =
+          unitPrice === null
+            ? "Price unavailable"
+            : formatPrice(
+                Number(item.price) * item.quantity,
+                item.currency || "AUD"
+              );
+
+        const imageHTML = image
+          ? `
+            <img
+              class="cart-item-image"
+              src="${escapeHTML(image)}"
+              alt="${name}"
+              loading="lazy"
+            >
+          `
+          : `
+            <div class="cart-item-image"
+              style="display:grid;place-items:center;text-align:center;font-size:12px">
+              No image
+            </div>
+          `;
+
+        return `
+          <article class="cart-item">
+            ${imageHTML}
+
+            <div class="cart-item-information">
+              <h2>${name}</h2>
+
+              <p class="cart-item-brand">${brand}</p>
+
+              <p>
+                Unit price: ${unitPrice || "Unavailable"}
+              </p>
+
+              <p class="cart-item-price">
+                Line total: ${linePrice}
+              </p>
+
+              <div class="cart-item-controls">
+                <div
+                  class="quantity-control"
+                  aria-label="Quantity for ${name}"
+                >
+                  <button
+                    type="button"
+                    data-action="decrease"
+                    data-id="${escapeHTML(item.id)}"
+                    aria-label="Decrease quantity of ${name}"
+                  >−</button>
+
+                  <span>${item.quantity}</span>
+
+                  <button
+                    type="button"
+                    data-action="increase"
+                    data-id="${escapeHTML(item.id)}"
+                    aria-label="Increase quantity of ${name}"
+                  >+</button>
+                </div>
+
+                <button
+                  type="button"
+                  class="remove-button"
+                  data-action="remove"
+                  data-id="${escapeHTML(item.id)}"
+                >
+                  Remove
+                </button>
+
+                ${
+                  retailerURL
+                    ? `
+                      <a
+                        href="${escapeHTML(retailerURL)}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View at Supercheap Auto
+                      </a>
+                    `
+                    : ""
+                }
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    cartItemsElement.addEventListener("click", event => {
+      const button = event.target.closest("button[data-action]");
+
+      if (!button) {
+        return;
+      }
+
+      const id = button.dataset.id;
+      const action = button.dataset.action;
+
+      if (action === "increase") {
+        updateQuantity(id, 1);
+      } else if (action === "decrease") {
+        updateQuantity(id, -1);
+      } else if (action === "remove") {
+        removeItem(id);
+      }
+    });
+
+    clearCartButton.addEventListener("click", () => {
+      const cart = getCart();
+
+      if (cart.length === 0) {
+        return;
+      }
+
+      if (confirm("Are you sure you want to empty your cart?")) {
+        saveCart([]);
+      }
+    });
+
+    window.addEventListener("storage", event => {
+      if (event.key === CART_STORAGE_KEY) {
+        renderCart();
+      }
+    });
+
+    renderCart();
+  </script>
+
+</body>
+</html>
