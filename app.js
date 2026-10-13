@@ -335,7 +335,7 @@ function renderProducts() {
     .join("");
 }
 
-// Product detail links navigate to their own EMS Auto Parts page.
+// Product detail links navigate to their own product page.
 // Supercheap Auto links continue opening the retailer's website.
 productContainer.addEventListener("click", event => {
   const link = event.target.closest("a");
@@ -344,24 +344,6 @@ productContainer.addEventListener("click", event => {
     return;
   }
 });
-
-  const index = Number(card.dataset.productIndex);
-  openProductDetails(allProducts[index]);
-});
-
-  // Let buttons and links handle their own keyboard actions.
-  if (event.target.closest("a, button")) {
-    return;
-  }
-
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-
-    const index = Number(card.dataset.productIndex);
-    openProductDetails(allProducts[index]);
-  }
-});
-
 // Search products as the user types.
 searchInput.addEventListener("input", renderProducts);
 
