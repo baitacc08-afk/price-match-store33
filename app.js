@@ -303,10 +303,15 @@ function renderProducts() {
             </p>
 
 <a
+
   class="compare-button details-button"
+
   href="./product.html?id=${encodeURIComponent(product.id)}"
+
 >
+
   View product details
+
 </a>
 
             ${
