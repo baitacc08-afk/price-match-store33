@@ -55,6 +55,24 @@ function formatPrice(price, currency = "AUD") {
 }
 
 // ------------------------------
+// EMS AUTO PARTS PRICING
+// 75% OFF THE STORED CATALOGUE PRICE
+// ------------------------------
+
+function getEMSPrice(price) {
+  if (
+    price === null ||
+    price === undefined ||
+    price === "" ||
+    !Number.isFinite(Number(price))
+  ) {
+    return null;
+  }
+
+  return Math.round(Number(price) * 25) / 100;
+}
+
+// ------------------------------
 // PRODUCT IMAGES
 // ------------------------------
 
