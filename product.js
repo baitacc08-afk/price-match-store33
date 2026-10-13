@@ -2,6 +2,8 @@
 
 const CATALOGUE_FILE = "./supercheap_products.json";
 const CART_STORAGE_KEY = "ems-auto-parts-cart";
+const DISCOUNT_PERCENTAGE = 75;
+const DISCOUNT_MULTIPLIER = (100 - DISCOUNT_PERCENTAGE) / 100;
 
 const productDetail = document.getElementById("product-detail");
 
@@ -17,13 +19,32 @@ function escapeHTML(value = "") {
   })[character]);
 }
 
-function formatPrice(price, currency = "AUD") {
+function hasValidPrice(price) {
   if (
     price === null ||
     price === undefined ||
-    price === "" ||
-    !Number.isFinite(Number(price))
+    price === ""
   ) {
+    return false;
+  }
+
+  const number = Number(price);
+
+  return Number.isFinite(number) && number >= 0;
+}
+
+function getDiscountedPrice(originalPrice) {
+  if (!hasValidPrice(originalPrice)) {
+    return null;
+  }
+
+  return Math.round(
+    (Number(originalPrice) * DISCOUNT_MULTIPLIER + Number.EPSILON) * 100
+  ) / 100;
+}
+
+function formatPrice(price, currency = "AUD") {
+  if (!hasValidPrice(price)) {
     return "Price unavailable";
   }
 
@@ -94,6 +115,7 @@ function updateCartCount() {
   );
 
   countElement.textContent = totalItems;
+
   countElement.setAttribute(
     "aria-label",
     `${totalItems} items in cart`
@@ -106,6 +128,20 @@ function addToCart(product) {
     return;
   }
 
+  if (!hasValidPrice(product.price)) {
+    alert("This product has no available price and cannot be added to your cart.");
+    return;
+  }
+
+  const originalPrice = Number(product.price);
+  const discountedPrice = getDiscountedPrice(originalPrice);
+  const currency = product.currency || "AUD";
+
+  if (discountedPrice === null) {
+    alert("Unable to calculate this product's price.");
+    return;
+  }
+
   const cart = getCart();
 
   const existingItem = cart.find(
@@ -115,13 +151,21 @@ function addToCart(product) {
   if (existingItem) {
     existingItem.quantity =
       (Number(existingItem.quantity) || 0) + 1;
+
+    // Keep existing cart entries aligned with the current discount.
+    existingItem.originalPrice = originalPrice;
+    existingItem.price = discountedPrice;
+    existingItem.currency = currency;
+    existingItem.discountPercentage = DISCOUNT_PERCENTAGE;
   } else {
     cart.push({
       id: product.id,
       name: product.name || "Unnamed product",
       brand: product.brand || "",
-      price: product.price ?? null,
-      currency: product.currency || "AUD",
+      originalPrice,
+      price: discountedPrice,
+      currency,
+      discountPercentage: DISCOUNT_PERCENTAGE,
       image: getProductImage(product),
       quantity: 1
     });
@@ -160,37 +204,76 @@ function renderProduct(product) {
   const name = escapeHTML(product.name || "Unnamed product");
   const brand = escapeHTML(product.brand || "Brand unavailable");
   const category = escapeHTML(product.category || "Uncategorised");
-
-  const price = escapeHTML(
-    formatPrice(product.price, product.currency || "AUD")
-  );
-
+  const currency = product.currency || "AUD";
   const imageURL = getProductImage(product);
+
+  const originalPriceAvailable = hasValidPrice(product.price);
+  const originalPrice = originalPriceAvailable
+    ? Number(product.price)
+    : null;
+
+  const discountedPrice = originalPriceAvailable
+    ? getDiscountedPrice(originalPrice)
+    : null;
+
+  const priceHTML = originalPriceAvailable
+    ? `
+        <div class="detail-price-section">
+          <span class="detail-discount-badge">
+            ${DISCOUNT_PERCENTAGE}% OFF
+          </span>
+
+          <p class="detail-original-price">
+            Original price:
+            ${escapeHTML(formatPrice(originalPrice, currency))}
+          </p>
+
+          <p class="detail-price">
+            ${escapeHTML(formatPrice(discountedPrice, currency))}
+          </p>
+
+          <p class="detail-savings">
+            You save
+            ${escapeHTML(
+              formatPrice(originalPrice - discountedPrice, currency)
+            )}
+          </p>
+        </div>
+      `
+    : `
+        <div class="detail-price-section">
+          <span class="detail-discount-badge">
+            ${DISCOUNT_PERCENTAGE}% OFF
+          </span>
+          <p class="detail-price">Price unavailable</p>
+        </div>
+      `;
 
   const imageHTML = imageURL
     ? `
-      <div class="detail-image-container">
-        <img
-          class="detail-image"
-          src="${escapeHTML(imageURL)}"
-          alt="${name}"
-          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-        >
-        <div
-          class="detail-image-fallback"
-          style="display:none"
-        >
-          Product image unavailable
+        <div class="detail-image-container">
+          <img
+            class="detail-image"
+            src="${escapeHTML(imageURL)}"
+            alt="${name}"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          >
+
+          <div
+            class="detail-image-fallback"
+            style="display:none"
+          >
+            Product image unavailable
+          </div>
         </div>
-      </div>
-    `
+      `
     : `
-      <div class="detail-image-container">
-        <div class="detail-image-fallback">
-          Product image unavailable
+        <div class="detail-image-container">
+          <div class="detail-image-fallback">
+            Product image unavailable
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
   productDetail.innerHTML = `
     <article class="detail-panel">
@@ -210,24 +293,24 @@ function renderProduct(product) {
         ${
           product.sku
             ? `
-              <p class="detail-sku">
-                <strong>SKU:</strong>
-                ${escapeHTML(product.sku)}
-              </p>
-            `
+                <p class="detail-sku">
+                  <strong>SKU:</strong>
+                  ${escapeHTML(product.sku)}
+                </p>
+              `
             : ""
         }
 
-        <p class="detail-price">${price}</p>
+        ${priceHTML}
 
         ${
           product.description
             ? `
-              <div class="detail-description">
-                <h2>Product description</h2>
-                <p>${escapeHTML(product.description)}</p>
-              </div>
-            `
+                <div class="detail-description">
+                  <h2>Product description</h2>
+                  <p>${escapeHTML(product.description)}</p>
+                </div>
+              `
             : ""
         }
 
@@ -236,6 +319,7 @@ function renderProduct(product) {
             type="button"
             class="detail-add-to-cart-button"
             id="add-to-cart-button"
+            ${!originalPriceAvailable ? "disabled" : ""}
           >
             🛒 Add to Cart
           </button>
@@ -260,11 +344,13 @@ function renderProduct(product) {
 
   document.title = `${product.name || "Product"} | EMS Auto Parts`;
 
-  document
-    .getElementById("add-to-cart-button")
-    .addEventListener("click", () => {
+  const addToCartButton = document.getElementById("add-to-cart-button");
+
+  if (addToCartButton) {
+    addToCartButton.addEventListener("click", () => {
       addToCart(selectedProduct);
     });
+  }
 
   updateCartCount();
 }
