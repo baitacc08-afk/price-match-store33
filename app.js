@@ -9,40 +9,41 @@ const searchInput = document.getElementById("search");
 const resultCount = document.getElementById("result-count");
 const categoryContainer = document.getElementById("categories");
 
+// Keep the existing filename so the product data continues to load.
 const CATALOGUE_FILE = "./supercheap_products.json";
 const CART_STORAGE_KEY = "ems-auto-parts-cart";
 
 let allProducts = [];
 let selectedCategory = "All";
 
+// Escape text before inserting it into HTML.
 // ------------------------------
 // SAFELY ESCAPE HTML
 // ------------------------------
 
 function escapeHTML(value = "") {
-  return String(value).replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[character]);
+return String(value).replace(/[&<>"']/g, character => ({
+"&": "&amp;",
+@@ -22,7 +30,10 @@ function escapeHTML(value = "") {
+})[character]);
 }
 
+// Format prices without inventing missing values.
 // ------------------------------
 // FORMAT PRICES
 // ------------------------------
 
 function formatPrice(price, currency = "AUD") {
-  if (
-    price === null ||
-    price === undefined ||
-    price === "" ||
-    !Number.isFinite(Number(price))
-  ) {
-    return "Price unavailable";
-  }
+if (
+price === null ||
+@@ -33,17 +44,53 @@ function formatPrice(price, currency = "AUD") {
+return "Price unavailable";
+}
 
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency
+  }).format(Number(price));
   try {
     return new Intl.NumberFormat("en-AU", {
       style: "currency",
@@ -54,36 +55,24 @@ function formatPrice(price, currency = "AUD") {
 }
 
 // ------------------------------
-// EMS AUTO PARTS PRICING
-// 75% OFF THE STORED CATALOGUE PRICE
-// ------------------------------
-
-function getEMSPrice(price) {
-  if (
-    price === null ||
-    price === undefined ||
-    price === "" ||
-    !Number.isFinite(Number(price))
-  ) {
-    return null;
-  }
-
-  return Math.round(Number(price) * 25) / 100;
-}
-
-// ------------------------------
 // PRODUCT IMAGES
 // ------------------------------
 
+// Validate product image URLs.
 function getProductImage(product) {
   if (!product || !product.image) {
     return "";
   }
 
-  try {
+try {
+    const url = new URL(product.image);
     const url = new URL(product.image, window.location.href);
 
-    if (url.protocol === "https:" || url.origin === window.location.origin) {
+    if (
+      url.protocol === "https:" &&
+      (url.hostname === window.location.hostname ||
+        url.hostname.includes("."))
+    ) {
       return url.href;
     }
   } catch {
@@ -105,158 +94,60 @@ function getProductURL(product) {
   try {
     const url = new URL(product.productUrl);
 
-    if (url.protocol === "https:") {
-      return url.href;
-    }
-  } catch {
-    return "";
-  }
-
-  return "";
-}
-
-// ------------------------------
+if (url.protocol === "https:") {
+return url.href;
+@@ -59,7 +106,6 @@ function getProductImage(product) {
 // SHOPPING CART
 // ------------------------------
 
+// Retrieve the saved cart.
 function getCart() {
-  try {
-    const cart = JSON.parse(
-      localStorage.getItem(CART_STORAGE_KEY) || "[]"
-    );
-
-    return Array.isArray(cart) ? cart : [];
-  } catch (error) {
-    console.error("Could not read shopping cart:", error);
-    return [];
-  }
+try {
+const cart = JSON.parse(
+@@ -73,7 +119,6 @@ function getCart() {
+}
 }
 
+// Save the cart.
 function saveCart(cart) {
-  try {
-    localStorage.setItem(
-      CART_STORAGE_KEY,
-      JSON.stringify(cart)
-    );
-
-    updateCartCount();
-
-    return true;
-  } catch (error) {
-    console.error("Could not save shopping cart:", error);
-
-    alert(
-      "Unable to save your cart. Please check your browser storage."
-    );
-
-    return false;
-  }
+try {
+localStorage.setItem(
+@@ -95,7 +140,6 @@ function saveCart(cart) {
+}
 }
 
+// Update the number displayed beside the Cart button.
 function updateCartCount() {
-  const countElement = document.getElementById("cart-count");
+const countElement = document.getElementById("cart-count");
 
-  if (!countElement) {
-    return;
-  }
-
-  const totalItems = getCart().reduce(
-    (total, item) => total + (Number(item.quantity) || 0),
-    0
-  );
-
-  countElement.textContent = totalItems;
-
-  countElement.setAttribute(
-    "aria-label",
-    `${totalItems} items in cart`
-  );
+@@ -116,7 +160,6 @@ function updateCartCount() {
+);
 }
 
+// Add a product to the cart.
 function addToCart(product) {
-  if (!product || !product.id) {
-    alert("This product cannot be added to your cart.");
-    return;
-  }
+if (!product || !product.id) {
+alert("This product cannot be added to your cart.");
+@@ -148,9 +191,11 @@ function addToCart(product) {
+if (saveCart(cart)) {
+const productIndex = allProducts.indexOf(product);
 
-  const cart = getCart();
-  const discountedPrice = getEMSPrice(product.price);
-
-  const existingItem = cart.find(
-    item => item.id === product.id
-  );
-
-  if (existingItem) {
-    // Update the price in case the pricing rule has changed.
-    existingItem.price = discountedPrice;
-    existingItem.currency = product.currency || "AUD";
-    existingItem.quantity =
-      (Number(existingItem.quantity) || 0) + 1;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name || "Unnamed product",
-      brand: product.brand || "",
-      price: discountedPrice,
-      currency: product.currency || "AUD",
-      image: getProductImage(product),
-      productUrl: getProductURL(product),
-      quantity: 1
-    });
-  }
-
-  if (saveCart(cart)) {
-    const productIndex = allProducts.indexOf(product);
-
+    const button = productContainer.querySelector(
+      `.add-to-cart-button[data-product-index="${productIndex}"]`
+    );
     const button = productContainer
       ? productContainer.querySelector(
           `.add-to-cart-button[data-product-index="${productIndex}"]`
         )
       : null;
 
-    if (button) {
-      const originalText = button.textContent;
-
-      button.textContent = "✓ Added!";
-      button.disabled = true;
-
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.disabled = false;
-      }, 1000);
-    }
-  }
+if (button) {
+const originalText = button.textContent;
+@@ -195,20 +240,25 @@ function matchesCategory(product) {
 }
 
 // ------------------------------
-// CATEGORY FILTERS
-// ------------------------------
-
-function matchesCategory(product) {
-  if (selectedCategory === "All") {
-    return true;
-  }
-
-  const category = String(product.category || "").toLowerCase();
-  const name = String(product.name || "").toLowerCase();
-  const combined = `${category} ${name}`;
-
-  switch (selectedCategory) {
-    case "Oils & Fluids":
-      return /oil|fluid|lubricant|additive|filter|coolant/.test(combined);
-
-    case "Tools":
-      return /tools?|tool kits?|equipment|workshop/.test(combined);
-
-    case "Accessories":
-      return /accessor|interior|exterior|car care|cleaning|paint/.test(combined);
-
-    default:
-      return category === selectedCategory.toLowerCase();
-  }
-}
-
-// ------------------------------
+// RENDER PRODUCT CATALOGUE
 // RENDER PRODUCTS
 // ------------------------------
 
@@ -266,150 +157,84 @@ function renderProducts() {
     return;
   }
 
-  const query = searchInput.value.trim().toLowerCase();
+const query = searchInput.value.trim().toLowerCase();
 
-  const filteredProducts = allProducts.filter(product => {
-    const searchableText = [
-      product.name,
-      product.brand,
-      product.sku,
+const filteredProducts = allProducts.filter(product => {
+const searchableText = [
+product.name,
+product.brand,
+product.sku,
+      product.category,
+      product.source
       product.category
-    ]
+]
       .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
+.join(" ")
+.toLowerCase();
 
-    return (
-      searchableText.includes(query) &&
-      matchesCategory(product)
-    );
-  });
-
-  resultCount.textContent =
-    `${filteredProducts.length} product` +
-    `${filteredProducts.length === 1 ? "" : "s"}`;
-
-  if (filteredProducts.length === 0) {
-    productContainer.innerHTML = `
-      <div class="empty-state">
+@@ -225,7 +275,7 @@ function renderProducts() {
+if (filteredProducts.length === 0) {
+productContainer.innerHTML = `
+     <div class="empty-state">
+        <h3>No Supercheap Auto products found</h3>
         <h3>No products found</h3>
-        <p>Try another search or select All products.</p>
-      </div>
-    `;
+       <p>Try another search or select All products.</p>
+     </div>
+   `;
+@@ -288,7 +338,7 @@ function renderProducts() {
+           </p>
 
-    return;
-  }
+           <p class="price-label">
+              Supercheap Auto catalogue
+              EMS Auto Parts
+           </p>
 
-  productContainer.innerHTML = filteredProducts
-    .map(product => {
-      const name = escapeHTML(
-        product.name || "Unnamed product"
-      );
-
-      const brand = escapeHTML(
-        product.brand || "Brand unavailable"
-      );
-
-      const category = escapeHTML(
-        product.category || "Uncategorised"
-      );
-
-      // Apply the 75% discount to the displayed price.
-      const discountedPrice = getEMSPrice(product.price);
-
-      const price = escapeHTML(
-        formatPrice(
-          discountedPrice,
-          product.currency || "AUD"
-        )
-      );
-
-      const imageURL = getProductImage(product);
-      const productIndex = allProducts.indexOf(product);
-
-      const imageHTML = imageURL
-        ? `
-          <img
-            src="${escapeHTML(imageURL)}"
-            alt="${name}"
-            loading="lazy"
-          >
-        `
-        : `<span>Image unavailable</span>`;
-
-      return `
-        <article class="product-card">
-
-          <div class="product-image">
-            ${imageHTML}
-          </div>
-
-          <div class="product-info">
-
-            <span class="product-category">
-              ${category}
-            </span>
-
-            <h3>${name}</h3>
-
-            <p class="product-brand">
-              ${brand}
-            </p>
-
-            <p class="product-price">
-              ${price}
-            </p>
-
-            <p class="price-label">
-              EMS Auto Parts — 75% off
-            </p>
-
-            <a
-              class="compare-button details-button"
-              href="./product.html?id=${encodeURIComponent(product.id)}"
-            >
-              View product details
-            </a>
-
-            <button
-              type="button"
-              class="compare-button add-to-cart-button"
-              data-product-index="${productIndex}"
-            >
-              🛒 Add to Cart
-            </button>
-
-          </div>
-
-        </article>
-      `;
-    })
-    .join("");
+           <a
+@@ -315,75 +365,84 @@ function renderProducts() {
 }
 
 // ------------------------------
+// PRODUCT AND CART CLICK HANDLING
 // ADD TO CART BUTTON HANDLING
 // ------------------------------
 
+// Only Add to Cart buttons receive special click handling.
+// Clicking a product card, image, name, or description
+// will not open a modal or navigate to another page.
+productContainer.addEventListener("click", event => {
+  const addButton = event.target.closest(
+    ".add-to-cart-button"
+  );
 if (productContainer) {
   productContainer.addEventListener("click", event => {
     const addButton = event.target.closest(
       ".add-to-cart-button"
     );
 
+  if (!addButton) {
+    return;
+  }
     if (!addButton) {
       return;
     }
 
+  event.preventDefault();
+  event.stopPropagation();
     event.preventDefault();
     event.stopPropagation();
 
+  const index = Number(addButton.dataset.productIndex);
     const index = Number(addButton.dataset.productIndex);
 
+  if (!Number.isInteger(index) || !allProducts[index]) {
+    return;
+  }
     if (!Number.isInteger(index) || !allProducts[index]) {
       return;
     }
 
+  addToCart(allProducts[index]);
+});
     addToCart(allProducts[index]);
   });
 }
@@ -418,6 +243,7 @@ if (productContainer) {
 // SEARCH PRODUCTS
 // ------------------------------
 
+searchInput.addEventListener("input", renderProducts);
 if (searchInput) {
   searchInput.addEventListener("input", renderProducts);
 }
@@ -426,22 +252,38 @@ if (searchInput) {
 // CATEGORY FILTERS
 // ------------------------------
 
+categoryContainer.addEventListener("click", event => {
+  const button = event.target.closest(".category");
 if (categoryContainer) {
   categoryContainer.addEventListener("click", event => {
     const button = event.target.closest(".category");
 
+  if (!button) {
+    return;
+  }
     if (!button) {
       return;
     }
 
+  selectedCategory = button.dataset.category || "All";
     selectedCategory = button.dataset.category || "All";
 
+  document.querySelectorAll(".category").forEach(
+    categoryButton => {
+      const isActive = categoryButton === button;
     document.querySelectorAll(".category").forEach(
       categoryButton => {
         const isActive = categoryButton === button;
 
+      categoryButton.classList.toggle("active", isActive);
         categoryButton.classList.toggle("active", isActive);
 
+      categoryButton.setAttribute(
+        "aria-pressed",
+        String(isActive)
+      );
+    }
+  );
         categoryButton.setAttribute(
           "aria-pressed",
           String(isActive)
@@ -449,15 +291,20 @@ if (categoryContainer) {
       }
     );
 
+  renderProducts();
+});
     renderProducts();
   });
 }
 
 // ------------------------------
+// LOAD CATALOGUE
 // LOAD PRODUCT DATA
 // ------------------------------
 
 async function initialiseCatalogue() {
+  resultCount.textContent =
+    "Loading Supercheap Auto products...";
   if (!productContainer || !searchInput || !resultCount) {
     console.error(
       "Product catalogue could not start because required HTML elements are missing."
@@ -467,75 +314,77 @@ async function initialiseCatalogue() {
 
   resultCount.textContent = "Loading products...";
 
-  updateCartCount();
+updateCartCount();
 
-  try {
-    const response = await fetch(CATALOGUE_FILE, {
-      cache: "no-store"
-    });
+@@ -394,15 +453,15 @@ async function initialiseCatalogue() {
 
-    if (!response.ok) {
-      throw new Error(
+if (!response.ok) {
+throw new Error(
+        `Could not load catalogue: HTTP ${response.status}`
         `Could not load products: HTTP ${response.status}`
-      );
-    }
-
-    const products = await response.json();
-
-    if (!Array.isArray(products)) {
-      throw new Error(
-        "The product data must contain a JSON array."
-      );
-    }
-
-    allProducts = products.filter(product => {
-      return (
-        product &&
-        typeof product.id === "string" &&
-        typeof product.name === "string" &&
-        product.name.trim() !== ""
-      );
-    });
-
-    console.log(
-      "EMS Auto Parts products loaded:",
-      allProducts.length
-    );
-
-    renderProducts();
-  } catch (error) {
-    console.error(
-      "EMS Auto Parts product loading error:",
-      error
-    );
-
-    resultCount.textContent = "Unable to load products";
-
-    productContainer.innerHTML = `
-      <div class="empty-state">
-        <h3>Unable to load products</h3>
-
-        <p>${escapeHTML(error.message)}</p>
-
-        <p>
-          Please try again later. If the problem continues,
-          the product data may be temporarily unavailable.
-        </p>
-      </div>
-    `;
-  }
+);
 }
 
+const products = await response.json();
+
+if (!Array.isArray(products)) {
+throw new Error(
+        "The catalogue must contain a JSON array."
+        "The product data must contain a JSON array."
+);
+}
+
+@@ -416,41 +475,46 @@ async function initialiseCatalogue() {
+});
+
+console.log(
+      "Supercheap Auto products loaded:",
+      "EMS Auto Parts products loaded:",
+allProducts.length
+);
+
+renderProducts();
+} catch (error) {
+console.error(
+      "Supercheap Auto catalogue error:",
+      "EMS Auto Parts product loading error:",
+error
+);
+
+    resultCount.textContent =
+      "Unable to load catalogue";
+    resultCount.textContent = "Unable to load products";
+
+productContainer.innerHTML = `
+     <div class="empty-state">
+        <h3>Unable to load Supercheap Auto products</h3>
+        <h3>Unable to load products</h3>
+
+       <p>${escapeHTML(error.message)}</p>
+
+       <p>
+          Check that supercheap_products.json is published
+          alongside index.html and app.js.
+          Please try again later. If the problem continues,
+          the product data may be temporarily unavailable.
+       </p>
+     </div>
+   `;
+}
+}
+
+// Keep the cart counter updated if the cart changes in another tab.
 // ------------------------------
 // KEEP CART COUNT UPDATED
 // ------------------------------
 
 window.addEventListener("storage", event => {
-  if (event.key === CART_STORAGE_KEY) {
-    updateCartCount();
-  }
+if (event.key === CART_STORAGE_KEY) {
+updateCartCount();
+}
 });
 
+// Start the catalogue.
 // ------------------------------
 // START THE PRODUCT CATALOGUE
 // ------------------------------
