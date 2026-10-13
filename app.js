@@ -39,23 +39,6 @@ function formatPrice(price, currency = "AUD") {
   }).format(Number(price));
 }
 
-// Validate Supercheap Auto product URLs.
-function getProductURL(product) {
-  try {
-    const url = new URL(product.productUrl);
-
-    if (
-      url.protocol === "https:" &&
-      url.hostname === "www.supercheapauto.com.au"
-    ) {
-      return url.href;
-    }
-  } catch {
-    return "";
-  }
-
-  return "";
-}
 
 // Validate product image URLs.
 function getProductImage(product) {
@@ -269,7 +252,6 @@ function renderProducts() {
       );
 
       const imageURL = getProductImage(product);
-      const productURL = getProductURL(product);
       const productIndex = allProducts.indexOf(product);
 
       const imageHTML = imageURL
@@ -323,21 +305,6 @@ function renderProducts() {
             >
               🛒 Add to Cart
             </button>
-
-            ${
-              productURL
-                ? `
-                  <a
-                    class="retailer-link"
-                    href="${escapeHTML(productURL)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View at Supercheap Auto
-                  </a>
-                `
-                : ""
-            }
 
           </div>
 
