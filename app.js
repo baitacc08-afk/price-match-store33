@@ -335,14 +335,21 @@ function renderProducts() {
     .join("");
 }
 
-// Product detail links navigate to their own product page.
-// Supercheap Auto links continue opening the retailer's website.
+// Links navigate normally. Clicking elsewhere on a card
+// continues opening the existing product details modal.
 productContainer.addEventListener("click", event => {
-  const link = event.target.closest("a");
-
-  if (link) {
+  if (event.target.closest("a, button")) {
     return;
   }
+
+  const card = event.target.closest(".product-card");
+
+  if (!card) {
+    return;
+  }
+
+  const index = Number(card.dataset.productIndex);
+  openProductDetails(allProducts[index]);
 });
 // Search products as the user types.
 searchInput.addEventListener("input", renderProducts);
