@@ -1,266 +1,348 @@
-"use strict";
+“use strict”;
 
-const CATALOGUE_FILE = "./supercheap_products.json";
+const CATALOGUE_FILE = “./supercheap_products.json”;
+const CART_STORAGE_KEY = “ems-auto-parts-cart”;
 
-const productDetail = document.getElementById("product-detail");
+const productDetail = document.getElementById(“product-detail”);
+
+let selectedProduct = null;
 
 // Escape text before inserting it into HTML.
-function escapeHTML(value = "") {
-  return String(value).replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[character]);
+function escapeHTML(value = “”) {
+return String(value).replace(/[&<>”’]/g, character => ({
+“&”: “&”,
+“<”: “<”,
+“>”: “>”,
+‘”’: “"”,
+“’”: “'”
+})[character]);
 }
 
 // Format the product price.
-function formatPrice(price, currency = "AUD") {
-  if (
-    price === null ||
-    price === undefined ||
-    price === "" ||
-    !Number.isFinite(Number(price))
-  ) {
-    return "Price unavailable";
-  }
-
-  try {
-    return new Intl.NumberFormat("en-AU", {
-      style: "currency",
-      currency
-    }).format(Number(price));
-  } catch {
-    return "Price unavailable";
-  }
+function formatPrice(price, currency = “AUD”) {
+if (
+price === null ||
+price === undefined ||
+price === “” ||
+!Number.isFinite(Number(price))
+) {
+return “Price unavailable”;
 }
 
-// Only allow valid HTTPS Supercheap Auto product URLs.
-function getProductURL(product) {
-  try {
-    const url = new URL(product.productUrl);
-
-    if (
-      url.protocol === "https:" &&
-      url.hostname === "www.supercheapauto.com.au"
-    ) {
-      return url.href;
-    }
-  } catch {
-    return "";
-  }
-
-  return "";
+try {
+return new Intl.NumberFormat(“en-AU”, {
+style: “currency”,
+currency
+}).format(Number(price));
+} catch {
+return “Price unavailable”;
+}
 }
 
 // Only allow HTTPS product images.
 function getProductImage(product) {
-  try {
-    const url = new URL(product.image);
+try {
+const url = new URL(product.image);
 
-    if (url.protocol === "https:") {
-      return url.href;
-    }
-  } catch {
-    return "";
-  }
+if (url.protocol === "https:") {
+  return url.href;
+}
 
-  return "";
+} catch {
+return “”;
+}
+
+return “”;
+}
+
+// Read the saved shopping cart.
+function getCart() {
+try {
+const cart = JSON.parse(
+localStorage.getItem(CART_STORAGE_KEY) || “[]”
+);
+
+return Array.isArray(cart) ? cart : [];
+
+} catch (error) {
+console.error(“Could not read shopping cart:”, error);
+return [];
+}
+}
+
+// Save the shopping cart and update the counter.
+function saveCart(cart) {
+try {
+localStorage.setItem(
+CART_STORAGE_KEY,
+JSON.stringify(cart)
+);
+
+updateCartCount();
+return true;
+
+} catch (error) {
+console.error(“Could not save shopping cart:”, error);
+
+alert(
+  "Unable to save your cart. Please check your browser storage."
+);
+return false;
+
+}
+}
+
+// Update the cart counter in the header, if present.
+function updateCartCount() {
+const countElement = document.getElementById(“cart-count”);
+
+if (!countElement) {
+return;
+}
+
+const totalItems = getCart().reduce(
+(total, item) => total + (Number(item.quantity) || 0),
+0
+);
+
+countElement.textContent = totalItems;
+
+countElement.setAttribute(
+“aria-label”,
+${totalItems} items in cart
+);
+}
+
+// Add the selected product to the shared cart.
+function addToCart(product) {
+if (!product || !product.id) {
+alert(“This product cannot be added to your cart.”);
+return;
+}
+
+const cart = getCart();
+
+const existingItem = cart.find(
+item => item.id === product.id
+);
+
+if (existingItem) {
+existingItem.quantity =
+(Number(existingItem.quantity) || 0) + 1;
+} else {
+cart.push({
+id: product.id,
+name: product.name || “Unnamed product”,
+brand: product.brand || “”,
+price: product.price ?? null,
+currency: product.currency || “AUD”,
+image: getProductImage(product),
+quantity: 1
+});
+}
+
+if (!saveCart(cart)) {
+return;
+}
+
+const button = document.getElementById(“add-to-cart-button”);
+
+if (button) {
+const originalText = “🛒 Add to Cart”;
+
+button.textContent = "✓ Added to Cart!";
+button.disabled = true;
+setTimeout(() => {
+  button.textContent = originalText;
+  button.disabled = false;
+}, 1200);
+
+}
 }
 
 // Display an error inside the product page.
 function showError(title, message) {
-  productDetail.innerHTML = `
-    <div class="detail-status">
-      <h1>${escapeHTML(title)}</h1>
-      <p>${escapeHTML(message)}</p>
-      <a href="./index.html">Return to EMS Auto Parts</a>
-    </div>
-  `;
+productDetail.innerHTML = <div class="detail-status"> <h1>${escapeHTML(title)}</h1> <p>${escapeHTML(message)}</p> <a href="./index.html">Return to EMS Auto Parts</a> </div>;
 }
 
 // Display the selected product.
 function renderProduct(product) {
-  const name = escapeHTML(product.name || "Unnamed product");
+selectedProduct = product;
 
-  const brand = escapeHTML(
-    product.brand || "Brand unavailable"
-  );
+const name = escapeHTML(product.name || “Unnamed product”);
 
-  const category = escapeHTML(
-    product.category || "Uncategorised"
-  );
+const brand = escapeHTML(
+product.brand || “Brand unavailable”
+);
 
-  const price = escapeHTML(
-    formatPrice(product.price, product.currency || "AUD")
-  );
+const category = escapeHTML(
+product.category || “Uncategorised”
+);
 
-  const imageURL = getProductImage(product);
-  const productURL = getProductURL(product);
+const price = escapeHTML(
+formatPrice(product.price, product.currency || “AUD”)
+);
 
-  const imageHTML = imageURL
-    ? `
-      <div class="detail-image-container">
-        <img
-          class="detail-image"
-          src="${escapeHTML(imageURL)}"
-          alt="${name}"
-          onerror="
-            this.style.display='none';
-            this.nextElementSibling.style.display='block';
-          "
-        >
+const imageURL = getProductImage(product);
 
-        <div class="detail-image-fallback">
-          Product image unavailable
-        </div>
-      </div>
-    `
-    : `
-      <div class="detail-image-container">
-        <div class="detail-image-fallback" style="display:block">
-          Product image unavailable
-        </div>
-      </div>
-    `;
+const imageHTML = imageURL
+? `
+    <div
+      class="detail-image-fallback"
+      style="display:none"
+    >
+      Product image unavailable
+    </div>
+  </div>
+`
+: `
+  <div class="detail-image-container">
+    <div
+      class="detail-image-fallback"
+      style="display:block"
+    >
+      Product image unavailable
+    </div>
+  </div>
+`;
 
-  const retailerButton = productURL
-    ? `
-      <a
-        class="detail-retailer-button"
-        href="${escapeHTML(productURL)}"
-        target="_blank"
-        rel="noopener noreferrer"
+productDetail.innerHTML = `
+${imageHTML}
+  <div class="detail-product-information">
+    <p class="detail-category">
+      ${category}
+    </p>
+    <h1 class="detail-title">
+      ${name}
+    </h1>
+    <p class="detail-brand">
+      <strong>Brand:</strong> ${brand}
+    </p>
+    ${
+      product.sku
+        ? `
+          <p class="detail-sku">
+            <strong>SKU:</strong>
+            ${escapeHTML(product.sku)}
+          </p>
+        `
+        : ""
+    }
+    <p class="detail-price">
+      ${price}
+    </p>
+    ${
+      product.description
+        ? `
+          <div class="detail-description">
+            <h2>Product description</h2>
+            <p>${escapeHTML(product.description)}</p>
+          </div>
+        `
+        : ""
+    }
+    <div class="detail-actions">
+      <button
+        type="button"
+        class="detail-add-to-cart-button"
+        id="add-to-cart-button"
       >
-        View at Supercheap Auto
+        🛒 Add to Cart
+      </button>
+      <a
+        class="detail-back-button"
+        href="./index.html"
+      >
+        Back to products
       </a>
-    `
-    : "";
+      <a
+        class="detail-back-button"
+        href="./cart.html"
+      >
+        View Cart
+      </a>
+    </div>
+  </div>
+</article>
 
-  productDetail.innerHTML = `
-    <article class="detail-panel">
-      <div class="detail-product-visual">
-        ${imageHTML}
-      </div>
+`;
 
-      <div class="detail-product-information">
-        <p class="detail-category">
-          ${category}
-        </p>
+document.title =
+${product.name || "Product"} | EMS Auto Parts;
 
-        <h1 class="detail-title">
-          ${name}
-        </h1>
+document
+.getElementById(“add-to-cart-button”)
+.addEventListener(“click”, () => {
+addToCart(selectedProduct);
+});
 
-        <p class="detail-brand">
-          <strong>Brand:</strong> ${brand}
-        </p>
-
-        ${
-          product.sku
-            ? `
-              <p class="detail-sku">
-                <strong>SKU:</strong>
-                ${escapeHTML(product.sku)}
-              </p>
-            `
-            : ""
-        }
-
-        <p class="detail-price">
-          ${price}
-        </p>
-
-        <p class="detail-price-note">
-          Listed in the Supercheap Auto catalogue.
-          Check the retailer's listing for the latest
-          availability and pricing.
-        </p>
-
-        ${
-          product.description
-            ? `
-              <div class="detail-description">
-                <h2>Product description</h2>
-                <p>${escapeHTML(product.description)}</p>
-              </div>
-            `
-            : ""
-        }
-
-        <div class="detail-actions">
-          ${retailerButton}
-
-          <a
-            class="detail-back-button"
-            href="./index.html"
-          >
-            Back to products
-          </a>
-        </div>
-      </div>
-    </article>
-  `;
-
-  document.title = `${product.name || "Product"} | EMS Auto Parts`;
+updateCartCount();
 }
 
 // Load the selected product from the existing catalogue.
 async function initialiseProductPage() {
-  const parameters = new URLSearchParams(window.location.search);
-  const productId = parameters.get("id");
+const parameters = new URLSearchParams(
+window.location.search
+);
 
-  if (!productId) {
-    showError(
-      "No product selected",
-      "Return to the catalogue and select a product to view its details."
-    );
-    return;
-  }
+const productId = parameters.get(“id”);
 
-  try {
-    const response = await fetch(CATALOGUE_FILE, {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Unable to load the catalogue. HTTP ${response.status}.`
-      );
-    }
-
-    const products = await response.json();
-
-    if (!Array.isArray(products)) {
-      throw new Error("The product catalogue has an invalid format.");
-    }
-
-    const product = products.find(item => {
-      return (
-        item &&
-        typeof item.id === "string" &&
-        item.id === productId
-      );
-    });
-
-    if (!product) {
-      showError(
-        "Product not found",
-        "This product could not be found in the current catalogue. Return to the catalogue and select another product."
-      );
-      return;
-    }
-
-    renderProduct(product);
-  } catch (error) {
-    console.error("Product detail loading error:", error);
-
-    showError(
-      "Unable to load product",
-      "The product information could not be loaded. Please try again later."
-    );
-  }
+if (!productId) {
+showError(
+“No product selected”,
+“Return to the catalogue and select a product to view its details.”
+);
+return;
 }
+
+try {
+const response = await fetch(CATALOGUE_FILE, {
+cache: “no-store”
+});
+
+if (!response.ok) {
+  throw new Error(
+    `Unable to load the catalogue. HTTP ${response.status}.`
+  );
+}
+const products = await response.json();
+if (!Array.isArray(products)) {
+  throw new Error(
+    "The product catalogue has an invalid format."
+  );
+}
+const product = products.find(item => {
+  return (
+    item &&
+    typeof item.id === "string" &&
+    item.id === productId
+  );
+});
+if (!product) {
+  showError(
+    "Product not found",
+    "This product could not be found in the current catalogue. Return to the catalogue and select another product."
+  );
+  return;
+}
+renderProduct(product);
+
+} catch (error) {
+console.error(“Product detail loading error:”, error);
+
+showError(
+  "Unable to load product",
+  "The product information could not be loaded. Please try again later."
+);
+
+}
+}
+
+// Update the cart counter if another tab changes the cart.
+window.addEventListener(“storage”, event => {
+if (event.key === CART_STORAGE_KEY) {
+updateCartCount();
+}
+});
 
 initialiseProductPage();
