@@ -12,15 +12,23 @@ content=“Learn more about EMS Auto Parts and our goal of making automotive pro
   <meta name="theme-color" content="#111111">
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* Requested black text */
-    .about-intro,
-    .about-content h2,
-    .about-content p:not(.eyebrow) {
+    /* Introduction tagline: black */
+    .about-intro {
       color: #000000;
     }
-    /* Keep WHO WE ARE orange */
-    .about-content > .eyebrow:first-child {
+    /* WHO WE ARE section: heading and paragraphs black */
+    .about-section:not(.about-mission) .about-content h2,
+    .about-section:not(.about-mission) .about-content p:not(.eyebrow) {
+      color: #000000;
+    }
+    /* WHO WE ARE label: orange */
+    .about-section:not(.about-mission) .about-content > .eyebrow {
       color: #ff6600;
+    }
+    /* OUR MISSION heading and paragraph: white */
+    .about-mission .about-content h2,
+    .about-mission .about-content p:not(.eyebrow) {
+      color: #ffffff;
     }
   </style>
 </head>
