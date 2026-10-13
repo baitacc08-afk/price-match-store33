@@ -1539,3 +1539,27 @@ input:focus-visible {
     background-color: #ff6a00;
     border-color: #ff6a00;
 }
+/* Black buttons with white text */
+button,
+button:hover,
+button:focus,
+button:active,
+.add-to-cart-btn {
+  background-color: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+/* Slightly lighter black when hovering */
+button:hover,
+.add-to-cart-btn:hover {
+  background-color: #222;
+  color: #fff;
+  border-color: #222;
+}
+
+/* Keep button text readable */
+button,
+.add-to-cart-btn {
+  cursor: pointer;
+}
