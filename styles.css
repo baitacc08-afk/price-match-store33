@@ -1523,3 +1523,14 @@ input:focus-visible {
     color: #ffffff !important;
 }
 
+/* Legal page return section — force all text to white */
+.legal-cta,
+.legal-cta h2,
+.legal-cta p,
+.legal-cta a,
+.legal-cta a:visited,
+.legal-cta a:hover,
+.legal-cta a:focus,
+.legal-cta a:active {
+    color: #ffffff !important;
+}
