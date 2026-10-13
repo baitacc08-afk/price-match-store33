@@ -1,6 +1,8 @@
-const productContainer = document.getElementById("product-detail");
+"use strict";
 
 const CATALOGUE_FILE = "./supercheap_products.json";
+
+const productDetail = document.getElementById("product-detail");
 
 // Escape text before inserting it into HTML.
 function escapeHTML(value = "") {
@@ -13,22 +15,28 @@ function escapeHTML(value = "") {
   })[character]);
 }
 
-// Validate product image URLs.
-function getProductImage(product) {
-  try {
-    const url = new URL(product.image);
-
-    if (url.protocol === "https:") {
-      return url.href;
-    }
-  } catch {
-    return "";
+// Format the product price.
+function formatPrice(price, currency = "AUD") {
+  if (
+    price === null ||
+    price === undefined ||
+    price === "" ||
+    !Number.isFinite(Number(price))
+  ) {
+    return "Price unavailable";
   }
 
-  return "";
+  try {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency
+    }).format(Number(price));
+  } catch {
+    return "Price unavailable";
+  }
 }
 
-// Allow only genuine Supercheap Auto product links.
+// Only allow valid HTTPS Supercheap Auto product URLs.
 function getProductURL(product) {
   try {
     const url = new URL(product.productUrl);
@@ -46,63 +54,81 @@ function getProductURL(product) {
   return "";
 }
 
-// Format a price without inventing unavailable values.
-function formatPrice(price, currency = "AUD") {
-  if (
-    price === null ||
-    price === undefined ||
-    price === "" ||
-    !Number.isFinite(Number(price))
-  ) {
-    return "Price unavailable";
+// Only allow HTTPS product images.
+function getProductImage(product) {
+  try {
+    const url = new URL(product.image);
+
+    if (url.protocol === "https:") {
+      return url.href;
+    }
+  } catch {
+    return "";
   }
 
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency
-  }).format(Number(price));
+  return "";
 }
 
-// Display a product's details.
+// Display an error inside the product page.
+function showError(title, message) {
+  productDetail.innerHTML = `
+    <div class="detail-status">
+      <h1>${escapeHTML(title)}</h1>
+      <p>${escapeHTML(message)}</p>
+      <a href="./index.html">Return to EMS Auto Parts</a>
+    </div>
+  `;
+}
+
+// Display the selected product.
 function renderProduct(product) {
   const name = escapeHTML(product.name || "Unnamed product");
-  const brand = escapeHTML(product.brand || "Brand unavailable");
-  const category = escapeHTML(product.category || "Uncategorised");
+
+  const brand = escapeHTML(
+    product.brand || "Brand unavailable"
+  );
+
+  const category = escapeHTML(
+    product.category || "Uncategorised"
+  );
 
   const price = escapeHTML(
     formatPrice(product.price, product.currency || "AUD")
   );
-
-  const sku = String(product.sku || "").trim();
 
   const imageURL = getProductImage(product);
   const productURL = getProductURL(product);
 
   const imageHTML = imageURL
     ? `
-      <img
-        class="product-detail-image"
-        src="${escapeHTML(imageURL)}"
-        alt="${name}"
-        onerror="
-          this.style.display='none';
-          this.nextElementSibling.style.display='block';
-        "
-      >
-      <div class="product-detail-image-fallback" style="display:none">
-        Product image unavailable
+      <div class="detail-image-container">
+        <img
+          class="detail-image"
+          src="${escapeHTML(imageURL)}"
+          alt="${name}"
+          onerror="
+            this.style.display='none';
+            this.nextElementSibling.style.display='block';
+          "
+        >
+
+        <div class="detail-image-fallback">
+          Product image unavailable
+        </div>
       </div>
     `
     : `
-      <div class="product-detail-image-fallback">
-        Product image unavailable
+      <div class="detail-image-container">
+        <div class="detail-image-fallback" style="display:block">
+          Product image unavailable
+        </div>
       </div>
     `;
 
-  const externalButton = productURL
+  const retailerButton = productURL
     ? `
       <a
-        class="product-detail-buy"
+        class="detail-retailer-button"
         href="${escapeHTML(productURL)}"
         target="_blank"
         rel="noopener noreferrer"
@@ -110,119 +136,86 @@ function renderProduct(product) {
         View at Supercheap Auto
       </a>
     `
-    : `
-      <p class="product-detail-notice">
-        The original product link is unavailable.
-      </p>
-    `;
+    : "";
 
-  productContainer.innerHTML = `
-    <article class="product-detail-card">
-
-      <div class="product-detail-gallery">
+  productDetail.innerHTML = `
+    <article class="detail-panel">
+      <div class="detail-product-visual">
         ${imageHTML}
       </div>
 
-      <div class="product-detail-information">
-
-        <span class="product-detail-eyebrow">
+      <div class="detail-product-information">
+        <p class="detail-category">
           ${category}
-        </span>
-
-        <h1>${name}</h1>
-
-        <p class="product-detail-brand">
-          Brand: <strong>${brand}</strong>
         </p>
 
-        <p class="product-detail-price">
+        <h1 class="detail-title">
+          ${name}
+        </h1>
+
+        <p class="detail-brand">
+          <strong>Brand:</strong> ${brand}
+        </p>
+
+        ${
+          product.sku
+            ? `
+              <p class="detail-sku">
+                <strong>SKU:</strong>
+                ${escapeHTML(product.sku)}
+              </p>
+            `
+            : ""
+        }
+
+        <p class="detail-price">
           ${price}
         </p>
 
-        <p class="product-detail-source">
-          Product information supplied by the Supercheap Auto catalogue.
+        <p class="detail-price-note">
+          Listed in the Supercheap Auto catalogue.
+          Check the retailer's listing for the latest
+          availability and pricing.
         </p>
 
-        <div class="product-detail-divider"></div>
+        ${
+          product.description
+            ? `
+              <div class="detail-description">
+                <h2>Product description</h2>
+                <p>${escapeHTML(product.description)}</p>
+              </div>
+            `
+            : ""
+        }
 
-        <h2>Product Information</h2>
+        <div class="detail-actions">
+          ${retailerButton}
 
-        <dl class="product-specifications">
-
-          <div>
-            <dt>Product name</dt>
-            <dd>${name}</dd>
-          </div>
-
-          <div>
-            <dt>Brand</dt>
-            <dd>${brand}</dd>
-          </div>
-
-          <div>
-            <dt>Category</dt>
-            <dd>${category}</dd>
-          </div>
-
-          ${
-            sku
-              ? `
-                <div>
-                  <dt>Product code</dt>
-                  <dd>${escapeHTML(sku)}</dd>
-                </div>
-              `
-              : ""
-          }
-
-          <div>
-            <dt>Retailer</dt>
-            <dd>Supercheap Auto</dd>
-          </div>
-
-        </dl>
-
-        ${externalButton}
-
-        <a class="product-detail-back" href="index.html">
-          Return to Product Catalogue
-        </a>
-
-        <p class="product-detail-disclaimer">
-          Prices and availability may change. Check the retailer's
-          website for current product information and pricing.
-        </p>
-
+          <a
+            class="detail-back-button"
+            href="./index.html"
+          >
+            Back to products
+          </a>
+        </div>
       </div>
-
     </article>
   `;
 
   document.title = `${product.name || "Product"} | EMS Auto Parts`;
 }
 
-// Display a helpful message if a product cannot be found.
-function showError(message) {
-  productContainer.innerHTML = `
-    <div class="product-detail-error">
-      <h1>Product Not Found</h1>
-
-      <p>${escapeHTML(message)}</p>
-
-      <a class="product-detail-back" href="index.html">
-        Return to Product Catalogue
-      </a>
-    </div>
-  `;
-}
-
-// Load the selected product.
+// Load the selected product from the existing catalogue.
 async function initialiseProductPage() {
-  const params = new URLSearchParams(window.location.search);
-  const productId = params.get("id");
+  const parameters = new URLSearchParams(window.location.search);
+  const productId = parameters.get("id");
 
   if (!productId) {
-    showError("No product was selected.");
+    showError(
+      "No product selected",
+      "Return to the catalogue and select a product to view its details."
+    );
     return;
   }
 
@@ -232,7 +225,9 @@ async function initialiseProductPage() {
     });
 
     if (!response.ok) {
-      throw new Error("Unable to load the product catalogue.");
+      throw new Error(
+        `Unable to load the catalogue. HTTP ${response.status}.`
+      );
     }
 
     const products = await response.json();
@@ -241,24 +236,29 @@ async function initialiseProductPage() {
       throw new Error("The product catalogue has an invalid format.");
     }
 
-    const product = products.find(item =>
-      item &&
-      typeof item.id === "string" &&
-      item.id === productId
-    );
+    const product = products.find(item => {
+      return (
+        item &&
+        typeof item.id === "string" &&
+        item.id === productId
+      );
+    });
 
     if (!product) {
-      showError("This product could not be found in the catalogue.");
+      showError(
+        "Product not found",
+        "This product could not be found in the current catalogue. Return to the catalogue and select another product."
+      );
       return;
     }
 
     renderProduct(product);
-
   } catch (error) {
-    console.error("Product page error:", error);
+    console.error("Product detail loading error:", error);
 
     showError(
-      "Unable to load this product. Please try again later."
+      "Unable to load product",
+      "The product information could not be loaded. Please try again later."
     );
   }
 }
