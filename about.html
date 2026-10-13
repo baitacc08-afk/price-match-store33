@@ -3,153 +3,435 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>About Us | EMS Auto Parts</title>
 
-<meta
-name=“description”
-content=“Learn more about EMS Auto Parts and our goal of making automotive product discovery easier.”
+  <meta
+    name="description"
+    content="Learn more about EMS Auto Parts, our purpose, and our commitment to helping automotive enthusiasts find quality parts at competitive prices."
+  >
 
-  <meta name="theme-color" content="#111111">
-  <link rel="stylesheet" href="styles.css">
   <style>
-    /* Introduction tagline: black */
-    .about-intro {
-      color: #000000;
+    * {
+      box-sizing: border-box;
     }
-    /* WHO WE ARE section: heading and paragraphs black */
-    .about-section:not(.about-mission) .about-content h2,
-    .about-section:not(.about-mission) .about-content p:not(.eyebrow) {
-      color: #000000;
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      line-height: 1.7;
     }
-    /* WHO WE ARE label: orange */
-    .about-section:not(.about-mission) .about-content > .eyebrow {
+
+    /* HEADER */
+    header {
+      background: #111;
+      color: white;
+      padding: 22px 20px;
+      text-align: center;
+      border-bottom: 4px solid #ff6600;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 2px;
+    }
+
+    header p {
+      margin: 5px 0 0;
+      color: #ff6600;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* NAVIGATION */
+    nav {
+      background: #222;
+      padding: 14px 10px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 25px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    nav a:hover {
       color: #ff6600;
     }
-    /* OUR MISSION heading and paragraph: white */
-    .about-mission .about-content h2,
-    .about-mission .about-content p:not(.eyebrow) {
-      color: #ffffff;
+
+    /* MAIN PAGE */
+    .page-container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .page-heading {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .page-heading h2 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: #111;
+    }
+
+    .page-heading p {
+      color: #666;
+      margin: 0;
+    }
+
+    /* CONTENT CARDS */
+    .about-section {
+      background: white;
+      margin-bottom: 25px;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+      border-left: 4px solid #ff6600;
+    }
+
+    .about-section h2 {
+      margin-top: 0;
+      color: #111;
+      font-size: 24px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 12px;
+    }
+
+    .about-section h3 {
+      margin-top: 25px;
+      margin-bottom: 8px;
+      color: #ff6600;
+      font-size: 17px;
+    }
+
+    .about-section p {
+      margin-top: 8px;
+      margin-bottom: 15px;
+    }
+
+    .about-section ul {
+      padding-left: 25px;
+    }
+
+    .about-section li {
+      margin-bottom: 8px;
+    }
+
+    /* MISSION HIGHLIGHT */
+    .mission-section {
+      background: #111;
+      color: white;
+      border-left: 4px solid #ff6600;
+    }
+
+    .mission-section h2 {
+      color: white;
+      border-bottom-color: #333;
+    }
+
+    .mission-section p {
+      color: #eee;
+    }
+
+    .mission-section h3 {
+      color: #ff6600;
+    }
+
+    /* VALUES */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .value-card {
+      background: #f7f7f7;
+      padding: 20px;
+      border-radius: 8px;
+      border-top: 3px solid #ff6600;
+    }
+
+    .value-card h3 {
+      margin-top: 0;
+    }
+
+    .value-card p {
+      margin-bottom: 0;
+    }
+
+    /* FOOTER */
+    footer {
+      background: #111;
+      color: #ccc;
+      text-align: center;
+      padding: 25px 15px;
+      margin-top: 50px;
+    }
+
+    footer p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    footer a {
+      color: #ff6600;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* MOBILE */
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 24px;
+      }
+
+      nav {
+        gap: 15px;
+      }
+
+      .page-container {
+        margin: 25px auto;
+        padding: 0 12px;
+      }
+
+      .page-heading h2 {
+        font-size: 26px;
+      }
+
+      .about-section {
+        padding: 20px;
+      }
+
+      .about-section h2 {
+        font-size: 21px;
+      }
+
+      .values-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
+
   <!-- HEADER -->
-  <header class="header">
-    <a class="logo" href="index.html" aria-label="EMS Auto Parts home">
-      <span class="logo-ems">EMS</span>
-      <span class="logo-auto">AUTO PARTS</span>
-    </a>
-<div class="header-tagline">
-  QUALITY PARTS. BETTER PRICES.
-</div>
-<nav class="header-nav" aria-label="Main navigation">
-  <a class="header-nav-link" href="index.html">Back to Store</a>
-</nav>
+  <header>
+    <h1>EMS AUTO PARTS</h1>
+    <p>QUALITY PARTS. BETTER PRICES.</p>
   </header>
-  <!-- ABOUT US CONTENT -->
-  <main class="about-page">
-<!-- PAGE INTRODUCTION -->
-<section class="about-hero">
-  <p class="eyebrow">GET TO KNOW US</p>
-  <h1>
-    <span class="about-title-black">About</span>
-    <span>EMS Auto Parts</span>
-  </h1>
-  <p class="about-intro">
-    Quality parts. Better prices. A simpler way to find automotive
-    products.
-  </p>
-</section>
-<!-- WHO WE ARE -->
-<section class="about-section">
-  <div class="about-content">
-    <p class="eyebrow">WHO WE ARE</p>
-    <h2>Automotive Products Made Easier to Find</h2>
-    <p>
-      EMS Auto Parts is an online automotive product discovery platform
-      designed to help people browse automotive products, tools, oils,
-      fluids and accessories in one convenient place.
-    </p>
-    <p>
-      Our catalogue makes it easier to explore available products,
-      compare listed prices and follow links to product listings for
-      more information.
-    </p>
-  </div>
-</section>
-<!-- OUR MISSION -->
-<section class="about-section about-mission">
-  <div class="about-content">
-    <p class="eyebrow">OUR MISSION</p>
-    <h2>Make Finding the Right Parts Simpler</h2>
-    <p>
-      Our aim is to make browsing automotive products straightforward.
-      We want visitors to be able to search, explore categories and
-      discover products without having to navigate multiple pages just
-      to begin their search.
-    </p>
-  </div>
-</section>
-<!-- WHAT WE OFFER -->
-<section class="about-features">
-  <div class="about-section-heading">
-    <p class="eyebrow">WHAT WE OFFER</p>
-    <h2>A Better Way to Browse</h2>
-  </div>
-  <div class="about-feature-grid">
-    <article class="about-feature-card">
-      <div class="about-feature-number">01</div>
-      <h3>Product Discovery</h3>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <a href="./index.html">Home</a>
+    <a href="./about.html">About Us</a>
+    <a href="./cart.html">Cart</a>
+    <a href="./legal.html">Legal & Information</a>
+  </nav>
+
+  <main class="page-container">
+
+    <!-- PAGE INTRODUCTION -->
+    <div class="page-heading">
+      <h2>About Us</h2>
       <p>
-        Browse automotive products across available categories, including
-        tools, oils, fluids and accessories.
+        Your destination for automotive parts, accessories and
+        information to help you find the right products for your vehicle.
       </p>
-    </article>
-    <article class="about-feature-card">
-      <div class="about-feature-number">02</div>
-      <h3>Easy Searching</h3>
-      <p>
-        Use the catalogue search to find products by name, brand or
-        product code.
-      </p>
-    </article>
-    <article class="about-feature-card">
-      <div class="about-feature-number">03</div>
-      <h3>Product Listings</h3>
-      <p>
-        Follow product links to view further details and information
-        from the relevant retailer.
-      </p>
-    </article>
-  </div>
-</section>
-<!-- RETURN TO STORE -->
-<section class="about-cta">
-  <p class="eyebrow">READY TO EXPLORE?</p>
-  <h2>Find Your Next Automotive Product</h2>
-  <p>
-    Head back to the catalogue and start browsing.
-  </p>
-  <a class="about-cta-button" href="index.html">
-    Browse Products
-  </a>
-</section>
-  </main>
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-brand">
-      <span class="footer-ems">EMS</span>
-      <span class="footer-auto">AUTO PARTS</span>
     </div>
-<p class="footer-tagline">
-  QUALITY PARTS. BETTER PRICES.
-</p>
-<p class="footer-copyright">
-  &copy; 2026 EMS Auto Parts. All rights reserved.
-</p>
-<div class="footer-legal-links">
-  <a href="legal.html">Legal &amp; Information</a>
-</div>
+
+    <!-- WHO WE ARE -->
+    <section class="about-section">
+      <h2>Who We Are</h2>
+
+      <p>
+        EMS Auto Parts is an automotive-focused website designed to help
+        car owners and enthusiasts discover parts and accessories for
+        their vehicles.
+      </p>
+
+      <p>
+        Whether you're maintaining your daily driver, improving your
+        vehicle's appearance or exploring performance upgrades, our aim
+        is to make finding relevant automotive products simpler.
+      </p>
+
+      <p>
+        We want to provide a straightforward browsing experience where
+        you can explore product information and compare options in one place.
+      </p>
+    </section>
+
+    <!-- OUR MISSION -->
+    <section class="about-section mission-section">
+      <h2>Our Mission</h2>
+
+      <p>
+        Our mission is to make automotive parts easier to discover by
+        providing a simple, accessible and user-friendly online experience.
+      </p>
+
+      <p>
+        We aim to help automotive enthusiasts make more informed decisions
+        by bringing product information together and making it easier to
+        explore available options.
+      </p>
+
+      <h3>Quality Parts. Better Prices.</h3>
+
+      <p>
+        We believe finding automotive products should be straightforward.
+        Our goal is to help visitors discover suitable options without
+        unnecessary complications.
+      </p>
+    </section>
+
+    <!-- WHAT WE OFFER -->
+    <section class="about-section">
+      <h2>What We Offer</h2>
+
+      <p>
+        EMS Auto Parts is designed to help visitors explore automotive
+        products and information through a simple online catalogue.
+      </p>
+
+      <ul>
+        <li>
+          <strong>Automotive Products:</strong>
+          Explore parts, accessories and car care products.
+        </li>
+
+        <li>
+          <strong>Product Information:</strong>
+          Review available product details to help identify suitable options.
+        </li>
+
+        <li>
+          <strong>Easy Browsing:</strong>
+          Navigate product listings through a straightforward website layout.
+        </li>
+
+        <li>
+          <strong>Price Awareness:</strong>
+          Explore pricing information where available and verify current
+          prices with the relevant seller.
+        </li>
+
+        <li>
+          <strong>Convenience:</strong>
+          Browse products and save selected items to your website cart.
+        </li>
+      </ul>
+    </section>
+
+    <!-- OUR VALUES -->
+    <section class="about-section">
+      <h2>Our Values</h2>
+
+      <p>
+        We want the EMS Auto Parts experience to reflect the following values.
+      </p>
+
+      <div class="values-grid">
+
+        <div class="value-card">
+          <h3>Quality</h3>
+          <p>
+            Helping visitors find relevant products and useful information
+            for their automotive needs.
+          </p>
+        </div>
+
+        <div class="value-card">
+          <h3>Value</h3>
+          <p>
+            Making it easier to explore available options and consider
+            pricing before purchasing.
+          </p>
+        </div>
+
+        <div class="value-card">
+          <h3>Simplicity</h3>
+          <p>
+            Providing a clean, organised website that makes browsing
+            automotive products straightforward.
+          </p>
+        </div>
+
+        <div class="value-card">
+          <h3>Enthusiasm</h3>
+          <p>
+            Supporting an interest in cars, maintenance, styling and
+            automotive improvement.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- OUR APPROACH -->
+    <section class="about-section">
+      <h2>Our Approach</h2>
+
+      <p>
+        We aim to make the process of exploring automotive products as
+        clear and convenient as possible.
+      </p>
+
+      <p>
+        Product specifications, prices and availability can change.
+        We encourage visitors to confirm compatibility and verify
+        purchasing details with the relevant seller before ordering.
+      </p>
+
+      <p>
+        Our website will continue to develop as we work towards improving
+        its features, product information and overall user experience.
+      </p>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="about-section">
+      <h2>Get in Touch</h2>
+
+      <p>
+        Have a question, suggestion or feedback about EMS Auto Parts?
+        We welcome enquiries and appreciate feedback that helps improve
+        the website.
+      </p>
+
+      <p>
+        Please use the contact method provided on our website to get in touch.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>&copy; 2026 EMS Auto Parts. All rights reserved.</p>
+
+    <p>
+      <a href="./index.html">Home</a> |
+      <a href="./about.html">About Us</a> |
+      <a href="./legal.html">Legal & Information</a>
+    </p>
   </footer>
+
 </body>
 </html>
