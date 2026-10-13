@@ -103,7 +103,11 @@ function saveCart(cart) {
     return true;
   } catch (error) {
     console.error("Could not save shopping cart:", error);
-    alert("Unable to save your cart. Please check your browser storage.");
+
+    alert(
+      "Unable to save your cart. Please check your browser storage."
+    );
+
     return false;
   }
 }
@@ -117,11 +121,12 @@ function updateCartCount() {
   }
 
   const totalItems = getCart().reduce(
-    (total, item) => total + item.quantity,
+    (total, item) => total + (Number(item.quantity) || 0),
     0
   );
 
   countElement.textContent = totalItems;
+
   countElement.setAttribute(
     "aria-label",
     `${totalItems} items in cart`
@@ -136,12 +141,14 @@ function addToCart(product) {
   }
 
   const cart = getCart();
+
   const existingItem = cart.find(
     item => item.id === product.id
   );
 
   if (existingItem) {
-    existingItem.quantity += 1;
+    existingItem.quantity =
+      (Number(existingItem.quantity) || 0) + 1;
   } else {
     cart.push({
       id: product.id,
@@ -156,8 +163,10 @@ function addToCart(product) {
   }
 
   if (saveCart(cart)) {
-    const button = document.querySelector(
-      `.add-to-cart-button[data-product-index="${allProducts.indexOf(product)}"]`
+    const productIndex = allProducts.indexOf(product);
+
+    const button = productContainer.querySelector(
+      `.add-to-cart-button[data-product-index="${productIndex}"]`
     );
 
     if (button) {
@@ -201,142 +210,6 @@ function matchesCategory(product) {
       return category === selectedCategory.toLowerCase();
   }
 }
-
-// ------------------------------
-// PRODUCT DETAILS MODAL
-// ------------------------------
-
-const productModal = document.createElement("dialog");
-
-productModal.id = "product-modal";
-productModal.className = "product-modal";
-
-productModal.innerHTML = `
-  <button
-    type="button"
-    class="modal-close"
-    aria-label="Close product details"
-  >
-    &times;
-  </button>
-
-  <div id="modal-product-content"></div>
-`;
-
-document.body.appendChild(productModal);
-
-const modalContent = document.getElementById(
-  "modal-product-content"
-);
-
-function openProductDetails(product) {
-  if (!product) {
-    return;
-  }
-
-  const imageURL = getProductImage(product);
-  const productURL = getProductURL(product);
-  const name = escapeHTML(product.name || "Unnamed product");
-  const brand = escapeHTML(product.brand || "Brand unavailable");
-  const category = escapeHTML(product.category || "Uncategorised");
-
-  const price = escapeHTML(
-    formatPrice(product.price, product.currency || "AUD")
-  );
-
-  const imageHTML = imageURL
-    ? `
-      <img
-        class="modal-product-image"
-        src="${escapeHTML(imageURL)}"
-        alt="${name}"
-        onerror="this.style.display='none';document.getElementById('modal-image-fallback').style.display='grid'"
-      >
-
-      <div
-        id="modal-image-fallback"
-        class="modal-image-fallback"
-        style="display:none"
-      >
-        Image unavailable
-      </div>
-    `
-    : `
-      <div class="modal-image-fallback">
-        Image unavailable
-      </div>
-    `;
-
-  modalContent.innerHTML = `
-    ${imageHTML}
-
-    <div class="modal-product-information">
-      <p class="product-category">${category}</p>
-
-      <h2>${name}</h2>
-
-      <p class="product-brand">
-        Brand: ${brand}
-      </p>
-
-      <p class="product-price">${price}</p>
-
-      <p class="price-label">
-        Listed in the Supercheap Auto catalogue.
-      </p>
-
-      <button
-        type="button"
-        class="compare-button modal-add-to-cart"
-      >
-        Add to Cart
-      </button>
-
-      ${
-        productURL
-          ? `
-            <a
-              class="compare-button modal-retailer-button"
-              href="${escapeHTML(productURL)}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View at Supercheap Auto
-            </a>
-          `
-          : `
-            <button
-              class="compare-button"
-              type="button"
-              disabled
-            >
-              Product link unavailable
-            </button>
-          `
-      }
-    </div>
-  `;
-
-  modalContent
-    .querySelector(".modal-add-to-cart")
-    .addEventListener("click", () => {
-      addToCart(product);
-    });
-
-  productModal.showModal();
-}
-
-productModal
-  .querySelector(".modal-close")
-  .addEventListener("click", () => {
-    productModal.close();
-  });
-
-productModal.addEventListener("click", event => {
-  if (event.target === productModal) {
-    productModal.close();
-  }
-});
 
 // ------------------------------
 // RENDER PRODUCT CATALOGUE
@@ -410,25 +283,27 @@ function renderProducts() {
         : `<span>Image unavailable</span>`;
 
       return `
-        <article
-          class="product-card"
-          data-product-index="${productIndex}"
-          tabindex="0"
-          role="button"
-          aria-label="View details for ${name}"
-        >
+        <article class="product-card">
+
           <div class="product-image">
             ${imageHTML}
           </div>
 
           <div class="product-info">
-            <span class="product-category">${category}</span>
+
+            <span class="product-category">
+              ${category}
+            </span>
 
             <h3>${name}</h3>
 
-            <p class="product-brand">${brand}</p>
+            <p class="product-brand">
+              ${brand}
+            </p>
 
-            <p class="product-price">${price}</p>
+            <p class="product-price">
+              ${price}
+            </p>
 
             <p class="price-label">
               Supercheap Auto catalogue
@@ -463,63 +338,53 @@ function renderProducts() {
                 `
                 : ""
             }
+
           </div>
+
         </article>
       `;
     })
     .join("");
 }
 
-// Handle product-card and Add to Cart clicks.
+// ------------------------------
+// PRODUCT AND CART CLICK HANDLING
+// ------------------------------
+
+// Only Add to Cart buttons receive special click handling.
+// Clicking a product card, image, name, or description
+// will not open a modal or navigate to another page.
 productContainer.addEventListener("click", event => {
   const addButton = event.target.closest(
     ".add-to-cart-button"
   );
 
-  if (addButton) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const index = Number(addButton.dataset.productIndex);
-
-    addToCart(allProducts[index]);
+  if (!addButton) {
     return;
   }
 
-  const link = event.target.closest("a");
+  event.preventDefault();
+  event.stopPropagation();
 
-  if (link) {
+  const index = Number(addButton.dataset.productIndex);
+
+  if (!Number.isInteger(index) || !allProducts[index]) {
     return;
   }
 
-  const card = event.target.closest(".product-card");
-
-  if (card) {
-    const index = Number(card.dataset.productIndex);
-    openProductDetails(allProducts[index]);
-  }
+  addToCart(allProducts[index]);
 });
 
-// Keyboard support for product cards.
-productContainer.addEventListener("keydown", event => {
-  const card = event.target.closest(".product-card");
+// ------------------------------
+// SEARCH PRODUCTS
+// ------------------------------
 
-  if (!card || event.target !== card) {
-    return;
-  }
-
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-
-    const index = Number(card.dataset.productIndex);
-    openProductDetails(allProducts[index]);
-  }
-});
-
-// Search products as the user types.
 searchInput.addEventListener("input", renderProducts);
 
-// Category filters.
+// ------------------------------
+// CATEGORY FILTERS
+// ------------------------------
+
 categoryContainer.addEventListener("click", event => {
   const button = event.target.closest(".category");
 
@@ -527,7 +392,7 @@ categoryContainer.addEventListener("click", event => {
     return;
   }
 
-  selectedCategory = button.dataset.category;
+  selectedCategory = button.dataset.category || "All";
 
   document.querySelectorAll(".category").forEach(
     categoryButton => {
@@ -550,7 +415,8 @@ categoryContainer.addEventListener("click", event => {
 // ------------------------------
 
 async function initialiseCatalogue() {
-  resultCount.textContent = "Loading Supercheap Auto products...";
+  resultCount.textContent =
+    "Loading Supercheap Auto products...";
 
   updateCartCount();
 
@@ -594,12 +460,15 @@ async function initialiseCatalogue() {
       error
     );
 
-    resultCount.textContent = "Unable to load catalogue";
+    resultCount.textContent =
+      "Unable to load catalogue";
 
     productContainer.innerHTML = `
       <div class="empty-state">
         <h3>Unable to load Supercheap Auto products</h3>
+
         <p>${escapeHTML(error.message)}</p>
+
         <p>
           Check that supercheap_products.json is published
           alongside index.html and app.js.
@@ -609,11 +478,12 @@ async function initialiseCatalogue() {
   }
 }
 
-// Keep the counter updated if the cart changes in another tab.
+// Keep the cart counter updated if the cart changes in another tab.
 window.addEventListener("storage", event => {
   if (event.key === CART_STORAGE_KEY) {
     updateCartCount();
   }
 });
 
+// Start the catalogue.
 initialiseCatalogue();
