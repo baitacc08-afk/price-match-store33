@@ -1505,46 +1505,37 @@ input:focus-visible {
   color: #000000;
 }
 
-/* LEGAL PAGE — BLACK TEXT */
+/* ========================================
+   LEGAL PAGE — TEXT COLOURS
+======================================== */
 
+/* Keep the legal page's main text black */
 .legal-hero > p:last-child,
-.legal-section p,
-.legal-cta p {
-  color: #000000;
+.legal-section p {
+    color: #000000;
 }
 
-.legal-details strong {
-  color: #000000;
-}
-
+/* Keep business details readable on the dark panel */
 .legal-details,
 .legal-details p,
 .legal-details strong {
     color: #ffffff !important;
 }
 
-/* FORCE LEGAL PAGE RETURN SECTION TEXT TO WHITE */
-
-body .legal-page .legal-cta h2 {
+/* Keep the return section text white */
+.legal-page .legal-cta h2,
+.legal-page .legal-cta p,
+.legal-page .legal-cta a,
+.legal-page .legal-cta a:visited,
+.legal-page .legal-cta a:hover,
+.legal-page .legal-cta a:focus,
+.legal-page .legal-cta a:active {
     color: #ffffff !important;
 }
 
-body .legal-page .legal-cta p {
+/* Keep the Browse Products button orange with white text */
+.legal-page .legal-cta .legal-cta-button {
     color: #ffffff !important;
-}
-
-body .legal-page .legal-cta a {
-    color: #ffffff !important;
-}
-
-body .legal-page .legal-cta a:visited,
-body .legal-page .legal-cta a:hover,
-body .legal-page .legal-cta a:focus,
-body .legal-page .legal-cta a:active {
-    color: #ffffff !important;
-}
-
-/* Keep the Browse Products button background orange */
-body .legal-page .legal-cta .legal-cta-button {
-    color: #ffffff !important;
+    background-color: #ff6a00;
+    border-color: #ff6a00;
 }
