@@ -302,13 +302,12 @@ function renderProducts() {
               Supercheap Auto catalogue
             </p>
 
-            <button
-              class="compare-button details-button"
-              type="button"
-              data-product-index="${productIndex}"
-            >
-              View product details
-            </button>
+<a
+  class="compare-button details-button"
+  href="./product.html?id=${encodeURIComponent(product.id)}"
+>
+  View product details
+</a>
 
             ${
               productURL
