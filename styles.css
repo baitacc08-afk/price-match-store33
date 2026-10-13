@@ -1563,3 +1563,27 @@ button,
 .add-to-cart-btn {
   cursor: pointer;
 }
+
+/* Product page Add to Cart button */
+.detail-add-to-cart-button {
+display: inline-block;
+padding: 13px 22px;
+background-color: #000;
+color: #fff;
+border: 2px solid #000;
+border-radius: 6px;
+font-size: 16px;
+font-weight: 700;
+cursor: pointer;
+transition: background-color 0.2s ease;
+}
+
+.detail-add-to-cart-button:hover {
+background-color: #222;
+color: #fff;
+}
+
+.detail-add-to-cart-button:disabled {
+opacity: 0.75;
+cursor: default;
+}
