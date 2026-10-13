@@ -1,75 +1,211 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Product | EMS Auto Parts</title>
+  <title>Product Details | EMS Auto Parts</title>
 
   <meta
     name="description"
     content="View automotive product details at EMS Auto Parts."
   >
 
-  <meta name="theme-color" content="#111111">
+  <link rel="stylesheet" href="./styles.css">
 
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    .detail-page {
+      width: min(1100px, 92%);
+      margin: 40px auto;
+    }
+
+    .detail-breadcrumb {
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .detail-breadcrumb a {
+      text-decoration: none;
+    }
+
+    .detail-breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 36px;
+      align-items: start;
+      padding: 28px;
+      border-radius: 12px;
+      background: var(--card-background, #fff);
+      border: 1px solid var(--border-color, #ddd);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    }
+
+    .detail-image-container {
+      display: grid;
+      place-items: center;
+      min-height: 320px;
+      padding: 20px;
+      border-radius: 10px;
+      background: #f7f7f7;
+    }
+
+    .detail-image {
+      display: block;
+      width: 100%;
+      max-height: 430px;
+      object-fit: contain;
+    }
+
+    .detail-image-fallback {
+      display: none;
+      text-align: center;
+      color: #666;
+      padding: 30px;
+    }
+
+    .detail-category {
+      margin: 0 0 12px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #666;
+    }
+
+    .detail-title {
+      margin: 0 0 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-brand,
+    .detail-sku,
+    .detail-description {
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-price {
+      margin: 24px 0 6px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .detail-price-note {
+      margin: 0 0 24px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .detail-actions a {
+      display: inline-block;
+      padding: 13px 20px;
+      border-radius: 6px;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .detail-retailer-button {
+      background: var(--primary-color, #d71920);
+      color: #fff !important;
+    }
+
+    .detail-retailer-button:hover {
+      filter: brightness(0.9);
+    }
+
+    .detail-back-button {
+      border: 1px solid #ccc;
+      color: inherit;
+      background: transparent;
+    }
+
+    .detail-back-button:hover {
+      background: rgba(127, 127, 127, 0.1);
+    }
+
+    .detail-status {
+      padding: 40px 20px;
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .detail-status h1 {
+      margin-bottom: 12px;
+    }
+
+    .detail-status a {
+      display: inline-block;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 700px) {
+      .detail-page {
+        margin: 24px auto;
+      }
+
+      .detail-panel {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 18px;
+      }
+
+      .detail-image-container {
+        min-height: 220px;
+      }
+
+      .detail-title {
+        font-size: 24px;
+      }
+
+      .detail-actions {
+        flex-direction: column;
+      }
+
+      .detail-actions a {
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
+  </style>
 </head>
 
-<body class="product-page">
-
-  <header class="header">
-    <a class="logo" href="index.html" aria-label="EMS Auto Parts home">
-      <span class="logo-ems">EMS</span>
-      <span class="logo-auto">AUTO PARTS</span>
+<body>
+  <header>
+    <a href="./index.html" aria-label="EMS Auto Parts home">
+      <img
+        src="./emsbanner.png"
+        alt="EMS Auto Parts"
+        style="display:block;width:100%;height:auto;"
+      >
     </a>
-
-    <div class="header-tagline">
-      QUALITY PARTS. BETTER PRICES.
-    </div>
-
-    <nav class="header-nav" aria-label="Main navigation">
-      <a class="header-nav-link" href="index.html">Catalogue</a>
-      <a class="header-nav-link" href="about.html">About Us</a>
-    </nav>
   </header>
 
-  <main class="product-detail-main">
-
-    <nav class="product-breadcrumb" aria-label="Breadcrumb">
-      <a href="index.html">Home</a>
-      <span aria-hidden="true">/</span>
-      <span>Product Details</span>
+  <main class="detail-page">
+    <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+      <a href="./index.html">Home</a>
+      <span aria-hidden="true"> / </span>
+      <span>Product details</span>
     </nav>
 
-    <div id="product-detail" aria-live="polite">
-      <div class="product-detail-loading">
-        Loading product details...
+    <section id="product-detail" aria-live="polite">
+      <div class="detail-status">
+        <h1>Loading product...</h1>
+        <p>Please wait while the product information loads.</p>
       </div>
-    </div>
-
+    </section>
   </main>
 
-  <footer class="footer">
-    <div class="footer-brand">
-      <span class="footer-ems">EMS</span>
-      <span class="footer-auto">AUTO PARTS</span>
-    </div>
-
-    <p class="footer-tagline">
-      QUALITY PARTS. BETTER PRICES.
-    </p>
-
-    <p class="footer-copyright">
-      &copy; 2026 EMS Auto Parts. All rights reserved.
-    </p>
-
-    <div class="footer-legal-links">
-      <a href="legal.html">Legal &amp; Information</a>
-    </div>
-  </footer>
-
-  <script src="product.js"></script>
-
+  <script src="./product.js" defer></script>
 </body>
 </html>
