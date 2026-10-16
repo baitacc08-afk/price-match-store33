@@ -2,8 +2,8 @@
 
 // ==================================================
 // EMS AUTO PARTS — PRODUCT CATALOGUE
-// Supports 112,905+ products across split JSON files.
-// Compact dropdown categories generated from catalogue data.
+// Advanced search for 112,905+ products across split
+// JSON files, with a compact category dropdown.
 // ==================================================
 
 const SEARCH_INDEX_FILE = "./search_index_compact.json";
@@ -21,6 +21,11 @@ let searchIndex = [];
 let selectedCategory = "All";
 let displayLimit = PRODUCTS_PER_PAGE;
 let renderVersion = 0;
+
+let searchScope = "all";
+let brandFilter = "";
+let skuFilter = "";
+let sortMode = "relevance";
 
 const productCache = new Map();
 const productFileCache = new Map();
@@ -85,9 +90,7 @@ function formatPrice(price, currency = "AUD") {
 // ==================================================
 
 function getProductImage(product) {
-  if (!product || !product.image) {
-    return "";
-  }
+  if (!product || !product.image) return "";
 
   try {
     const url = new URL(product.image, window.location.href);
@@ -106,9 +109,7 @@ function getProductImage(product) {
 }
 
 function getProductURL(product) {
-  if (!product || !product.productUrl) {
-    return "";
-  }
+  if (!product || !product.productUrl) return "";
 
   try {
     const url = new URL(product.productUrl);
@@ -145,31 +146,19 @@ function getCart() {
 
 function saveCart(cart) {
   try {
-    localStorage.setItem(
-      CART_STORAGE_KEY,
-      JSON.stringify(cart)
-    );
-
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
     updateCartCount();
-
     return true;
   } catch (error) {
     console.error("Could not save shopping cart:", error);
-
-    alert(
-      "Unable to save your cart. Please check your browser storage."
-    );
-
+    alert("Unable to save your cart. Please check your browser storage.");
     return false;
   }
 }
 
 function updateCartCount() {
   const countElement = document.getElementById("cart-count");
-
-  if (!countElement) {
-    return;
-  }
+  if (!countElement) return;
 
   const totalItems = getCart().reduce(
     (total, item) => total + (Number(item.quantity) || 0),
@@ -177,7 +166,6 @@ function updateCartCount() {
   );
 
   countElement.textContent = totalItems;
-
   countElement.setAttribute(
     "aria-label",
     `${totalItems} items in cart`
@@ -214,7 +202,6 @@ function addToCart(product) {
     existingItem.image = getProductImage(product);
     existingItem.productUrl = getProductURL(product);
     existingItem.discountPercentage = 75;
-
     existingItem.quantity =
       (Number(existingItem.quantity) || 0) + 1;
   } else {
@@ -310,16 +297,13 @@ function buildCategoryTree() {
 }
 
 // ==================================================
-// COMPACT CATEGORY DROPDOWN STYLING
+// CATEGORY DROPDOWN STYLES
 // ==================================================
 
 function injectCategoryStyles() {
-  if (document.getElementById("ems-category-styles")) {
-    return;
-  }
+  if (document.getElementById("ems-category-styles")) return;
 
   const style = document.createElement("style");
-
   style.id = "ems-category-styles";
 
   style.textContent = `
@@ -354,7 +338,8 @@ function injectCategoryStyles() {
     #categories .ems-category-dropdown-button:hover,
     #categories .ems-category-dropdown-button:focus-visible {
       border-color: #ff6a00;
-      outline: none;
+      outline: 2px solid rgba(255, 106, 0, 0.35);
+      outline-offset: 2px;
     }
 
     #categories .ems-category-chevron {
@@ -386,7 +371,7 @@ function injectCategoryStyles() {
     }
 
     #categories .ems-category-menu[hidden] {
-      display: none;
+      display: none !important;
     }
 
     #categories .ems-category-list {
@@ -506,9 +491,7 @@ function renderCategoryNode(node) {
   const childrenHTML = hasChildren && expanded
     ? `
       <ul class="ems-category-list ems-category-children">
-        ${childNodes
-          .map(child => renderCategoryNode(child))
-          .join("")}
+        ${childNodes.map(renderCategoryNode).join("")}
       </ul>
     `
     : "";
@@ -524,9 +507,7 @@ function renderCategoryNode(node) {
         title="${expanded ? "Collapse" : "Expand"} ${escapeHTML(node.name)}"
       >${expanded ? "−" : "+"}</button>
     `
-    : `
-      <span style="flex: 0 0 30px;"></span>
-    `;
+    : `<span style="flex: 0 0 30px;"></span>`;
 
   return `
     <li class="ems-category-item">
@@ -552,14 +533,8 @@ function renderCategoryNode(node) {
   `;
 }
 
-// ==================================================
-// RENDER CATEGORY DROPDOWN
-// ==================================================
-
 function renderCategories() {
-  if (!categoryContainer) {
-    return;
-  }
+  if (!categoryContainer) return;
 
   injectCategoryStyles();
 
@@ -613,18 +588,14 @@ function renderCategories() {
       </div>
 
       <ul class="ems-category-list">
-        ${rootCategories
-          .map(node => renderCategoryNode(node))
-          .join("")}
+        ${rootCategories.map(renderCategoryNode).join("")}
       </ul>
     </div>
   `;
 }
 
 function closeCategoryMenu() {
-  if (!categoryContainer) {
-    return;
-  }
+  if (!categoryContainer) return;
 
   categoryContainer.dataset.open = "false";
   renderCategories();
@@ -635,9 +606,7 @@ function closeCategoryMenu() {
 // ==================================================
 
 function matchesCategory(product) {
-  if (selectedCategory === "All") {
-    return true;
-  }
+  if (selectedCategory === "All") return true;
 
   const productCategory = normaliseCategoryPath(product.category);
   const selectedPath = normaliseCategoryPath(selectedCategory);
@@ -654,9 +623,7 @@ function matchesCategory(product) {
 
 async function loadProductFile(filename) {
   if (!filename || typeof filename !== "string") {
-    throw new Error(
-      "A product file is missing from the search index."
-    );
+    throw new Error("A product file is missing from the search index.");
   }
 
   if (productFileCache.has(filename)) {
@@ -664,10 +631,9 @@ async function loadProductFile(filename) {
   }
 
   const request = (async () => {
-    const response = await fetch(
-      `./${encodeURIComponent(filename)}`,
-      { cache: "force-cache" }
-    );
+    const response = await fetch(`./${encodeURIComponent(filename)}`, {
+      cache: "force-cache"
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -678,9 +644,7 @@ async function loadProductFile(filename) {
     const products = await response.json();
 
     if (!Array.isArray(products)) {
-      throw new Error(
-        `${filename} does not contain a product array.`
-      );
+      throw new Error(`${filename} does not contain a product array.`);
     }
 
     for (const product of products) {
@@ -703,17 +667,11 @@ async function loadProductFile(filename) {
 }
 
 async function loadProductsForEntries(entries) {
-  const filenames = [
-    ...new Set(
-      entries
-        .map(entry => entry.file)
-        .filter(Boolean)
-    )
-  ];
+  const filenames = [...new Set(
+    entries.map(entry => entry.file).filter(Boolean)
+  )];
 
-  await Promise.all(
-    filenames.map(filename => loadProductFile(filename))
-  );
+  await Promise.all(filenames.map(loadProductFile));
 
   return entries
     .map(entry => productCache.get(String(entry.id)))
@@ -721,7 +679,7 @@ async function loadProductsForEntries(entries) {
 }
 
 // ==================================================
-// SEARCH INDEX
+// ADVANCED SEARCH AND RELEVANCE
 // ==================================================
 
 function getSearchText(product) {
@@ -737,15 +695,342 @@ function getSearchText(product) {
     .toLowerCase();
 }
 
+function getSearchFieldText(product, scope) {
+  const fields = {
+    name: product.name,
+    brand: product.brand,
+    sku: product.sku,
+    category: product.category,
+    id: product.id
+  };
+
+  if (scope === "all") {
+    return getSearchText(product);
+  }
+
+  return String(fields[scope] || "").toLowerCase();
+}
+
+function scoreSearchResult(product, query) {
+  if (!query) return 0;
+
+  const name = String(product.name || "").toLowerCase();
+  const brand = String(product.brand || "").toLowerCase();
+  const sku = String(product.sku || "").toLowerCase();
+  const id = String(product.id || "").toLowerCase();
+  const normalisedQuery = query.trim().toLowerCase();
+
+  if (sku && sku === normalisedQuery) return 1000;
+  if (id && id === normalisedQuery) return 950;
+  if (name === normalisedQuery) return 900;
+  if (name.startsWith(normalisedQuery)) return 800;
+  if (brand === normalisedQuery) return 750;
+  if (brand.startsWith(normalisedQuery)) return 700;
+  if (name.includes(normalisedQuery)) return 600;
+  if (sku.includes(normalisedQuery)) return 550;
+  if (brand.includes(normalisedQuery)) return 500;
+
+  return 100;
+}
+
 function findMatchingEntries() {
   const query = searchInput.value.trim().toLowerCase();
 
-  return searchIndex.filter(product => {
+  // Correct whitespace splitting allows multi-word searches.
+  const queryTerms = query.split(/\s+/).filter(Boolean);
+
+  const brandQuery = brandFilter.trim().toLowerCase();
+  const skuQuery = skuFilter.trim().toLowerCase();
+
+  const matches = searchIndex.filter(product => {
+    const scopedText = getSearchFieldText(product, searchScope);
+
+    const matchesQuery = queryTerms.every(term =>
+      scopedText.includes(term)
+    );
+
+    const matchesBrand = !brandQuery ||
+      String(product.brand || "").toLowerCase().includes(brandQuery);
+
+    const matchesSKU = !skuQuery ||
+      String(product.sku || "").toLowerCase().includes(skuQuery) ||
+      String(product.id || "").toLowerCase().includes(skuQuery);
+
     return (
-      getSearchText(product).includes(query) &&
+      matchesQuery &&
+      matchesBrand &&
+      matchesSKU &&
       matchesCategory(product)
     );
   });
+
+  if (sortMode === "name") {
+    matches.sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+  } else if (sortMode === "brand") {
+    matches.sort((a, b) =>
+      String(a.brand || "").localeCompare(String(b.brand || "")) ||
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+  } else if (query) {
+    matches.sort((a, b) =>
+      scoreSearchResult(b, query) - scoreSearchResult(a, query) ||
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+  }
+
+  return matches;
+}
+
+// ==================================================
+// ADVANCED SEARCH INTERFACE
+// ==================================================
+
+function injectAdvancedSearch() {
+  if (
+    !searchInput ||
+    document.getElementById("ems-advanced-search")
+  ) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "ems-advanced-search-styles";
+
+  style.textContent = `
+    #ems-advanced-search {
+      width: min(100%, 760px);
+      margin: 8px 0 16px;
+      color: inherit;
+      font: inherit;
+    }
+
+    #ems-advanced-search .ems-advanced-toggle {
+      border: 0;
+      padding: 6px 0;
+      background: transparent;
+      color: #ff7a1a;
+      font: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #ems-advanced-search .ems-advanced-toggle:hover {
+      color: #ff9a52;
+    }
+
+    #ems-advanced-search .ems-advanced-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+      padding: 14px;
+      border: 1px solid rgba(255, 106, 0, 0.45);
+      border-radius: 9px;
+      background: #171717;
+      color: #fff;
+    }
+
+    #ems-advanced-search .ems-advanced-panel[hidden] {
+      display: none !important;
+    }
+
+    #ems-advanced-search label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+      font-size: 0.88rem;
+    }
+
+    #ems-advanced-search input,
+    #ems-advanced-search select {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 9px 10px;
+      border: 1px solid #555;
+      border-radius: 6px;
+      background: #242424;
+      color: #fff;
+      font: inherit;
+    }
+
+    #ems-advanced-search input:focus,
+    #ems-advanced-search select:focus {
+      outline: 2px solid #ff7a1a;
+      outline-offset: 1px;
+    }
+
+    #ems-advanced-search .ems-advanced-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #ems-advanced-search .ems-advanced-actions button {
+      padding: 9px 13px;
+      border: 1px solid #ff7a1a;
+      border-radius: 6px;
+      background: #ff7a1a;
+      color: #111;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #ems-advanced-search .ems-advanced-actions button:hover {
+      filter: brightness(1.08);
+    }
+
+    #ems-advanced-search .ems-advanced-actions .ems-reset-search {
+      background: transparent;
+      color: #fff;
+    }
+
+    @media (max-width: 560px) {
+      #ems-advanced-search .ems-advanced-panel {
+        grid-template-columns: 1fr;
+      }
+
+      #ems-advanced-search .ems-advanced-actions {
+        grid-column: auto;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+
+  const wrapper = document.createElement("section");
+  wrapper.id = "ems-advanced-search";
+
+  wrapper.innerHTML = `
+    <button
+      type="button"
+      class="ems-advanced-toggle"
+      id="ems-advanced-toggle"
+      aria-expanded="false"
+      aria-controls="ems-advanced-panel"
+    >
+      Advanced search +
+    </button>
+
+    <div
+      class="ems-advanced-panel"
+      id="ems-advanced-panel"
+      hidden
+    >
+      <label>
+        Search in
+        <select id="ems-search-scope">
+          <option value="all">All fields</option>
+          <option value="name">Product name</option>
+          <option value="brand">Brand</option>
+          <option value="sku">SKU / product code</option>
+          <option value="category">Category</option>
+          <option value="id">Product ID</option>
+        </select>
+      </label>
+
+      <label>
+        Brand contains
+        <input
+          id="ems-brand-filter"
+          type="search"
+          placeholder="e.g. Ryco"
+        >
+      </label>
+
+      <label>
+        SKU or product ID contains
+        <input
+          id="ems-sku-filter"
+          type="search"
+          placeholder="Enter a code"
+        >
+      </label>
+
+      <label>
+        Sort results
+        <select id="ems-sort-mode">
+          <option value="relevance">Most relevant</option>
+          <option value="name">Product name (A–Z)</option>
+          <option value="brand">Brand (A–Z)</option>
+        </select>
+      </label>
+
+      <div class="ems-advanced-actions">
+        <button type="button" id="ems-apply-advanced">
+          Apply filters
+        </button>
+
+        <button
+          type="button"
+          class="ems-reset-search"
+          id="ems-reset-advanced"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  `;
+
+  searchInput.insertAdjacentElement("afterend", wrapper);
+
+  const toggle = wrapper.querySelector("#ems-advanced-toggle");
+  const panel = wrapper.querySelector("#ems-advanced-panel");
+
+  toggle.addEventListener("click", () => {
+    const open = toggle.getAttribute("aria-expanded") !== "true";
+
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.textContent = open
+      ? "Advanced search −"
+      : "Advanced search +";
+
+    panel.hidden = !open;
+  });
+
+  wrapper
+    .querySelector("#ems-apply-advanced")
+    .addEventListener("click", () => {
+      searchScope = wrapper.querySelector("#ems-search-scope").value;
+      brandFilter = wrapper.querySelector("#ems-brand-filter").value;
+      skuFilter = wrapper.querySelector("#ems-sku-filter").value;
+      sortMode = wrapper.querySelector("#ems-sort-mode").value;
+
+      displayLimit = PRODUCTS_PER_PAGE;
+      renderProducts();
+    });
+
+  wrapper
+    .querySelector("#ems-reset-advanced")
+    .addEventListener("click", () => {
+      searchInput.value = "";
+
+      wrapper.querySelector("#ems-search-scope").value = "all";
+      wrapper.querySelector("#ems-brand-filter").value = "";
+      wrapper.querySelector("#ems-sku-filter").value = "";
+      wrapper.querySelector("#ems-sort-mode").value = "relevance";
+
+      searchScope = "all";
+      brandFilter = "";
+      skuFilter = "";
+      sortMode = "relevance";
+      selectedCategory = "All";
+      displayLimit = PRODUCTS_PER_PAGE;
+
+      if (categoryContainer) {
+        categoryContainer.dataset.open = "false";
+        renderCategories();
+      }
+
+      renderProducts();
+    });
 }
 
 // ==================================================
@@ -753,85 +1038,46 @@ function findMatchingEntries() {
 // ==================================================
 
 function createProductCard(product) {
-  const name = escapeHTML(
-    product.name || "Unnamed product"
-  );
-
-  const brand = escapeHTML(
-    product.brand || "Brand unavailable"
-  );
-
-  const category = escapeHTML(
-    product.category || "Uncategorised"
-  );
+  const name = escapeHTML(product.name || "Unnamed product");
+  const brand = escapeHTML(product.brand || "Brand unavailable");
+  const category = escapeHTML(product.category || "Uncategorised");
 
   const discountedPrice = getEMSPrice(product.price);
 
-  const price = escapeHTML(
-    formatPrice(
-      discountedPrice,
-      product.currency || "AUD"
-    )
-  );
+  const price = escapeHTML(formatPrice(
+    discountedPrice,
+    product.currency || "AUD"
+  ));
 
   const imageURL = getProductImage(product);
 
   const imageHTML = imageURL
-    ? `
-      <img
-        src="${escapeHTML(imageURL)}"
-        alt="${name}"
-        loading="lazy"
-        decoding="async"
-      >
-    `
+    ? `<img src="${escapeHTML(imageURL)}" alt="${name}" loading="lazy" decoding="async">`
     : `<span>Image unavailable</span>`;
 
   return `
     <article class="product-card">
-
-      <div class="product-image">
-        ${imageHTML}
-      </div>
+      <div class="product-image">${imageHTML}</div>
 
       <div class="product-info">
-
-        <span class="product-category">
-          ${category}
-        </span>
-
+        <span class="product-category">${category}</span>
         <h3>${name}</h3>
-
-        <p class="product-brand">
-          ${brand}
-        </p>
-
-        <p class="product-price">
-          ${price}
-        </p>
-
-        <p class="price-label">
-          EMS Auto Parts
-        </p>
+        <p class="product-brand">${brand}</p>
+        <p class="product-price">${price}</p>
+        <p class="price-label">EMS Auto Parts</p>
 
         <a
           class="compare-button details-button"
           href="./product.html?id=${encodeURIComponent(String(product.id))}"
-        >
-          View product details
-        </a>
+        >View product details</a>
 
         <button
           type="button"
           class="compare-button add-to-cart-button"
           data-product-id="${escapeHTML(String(product.id))}"
           ${discountedPrice === null ? "disabled" : ""}
-        >
-          Add to Cart
-        </button>
-
+        >Add to Cart</button>
       </div>
-
     </article>
   `;
 }
@@ -841,9 +1087,7 @@ function createProductCard(product) {
 // ==================================================
 
 async function renderProducts() {
-  if (!productContainer || !searchInput || !resultCount) {
-    return;
-  }
+  if (!productContainer || !searchInput || !resultCount) return;
 
   const currentVersion = ++renderVersion;
   const matchingEntries = findMatchingEntries();
@@ -859,7 +1103,7 @@ async function renderProducts() {
     productContainer.innerHTML = `
       <div class="no-results">
         <h3>No products found</h3>
-        <p>Try another search or select All Products.</p>
+        <p>Try another search, adjust your filters or select All Products.</p>
       </div>
     `;
 
@@ -875,24 +1119,17 @@ async function renderProducts() {
   try {
     const products = await loadProductsForEntries(visibleEntries);
 
-    if (currentVersion !== renderVersion) {
-      return;
-    }
+    if (currentVersion !== renderVersion) return;
 
     resultCount.textContent =
       `Showing ${products.length} of ${totalMatches.toLocaleString()} products`;
 
-    const cardsHTML = products
-      .map(createProductCard)
-      .join("");
+    const cardsHTML = products.map(createProductCard).join("");
 
     const loadMoreHTML = totalMatches > displayLimit
       ? `
         <div style="grid-column: 1 / -1; text-align: center; padding: 20px;">
-          <button
-            type="button"
-            class="compare-button load-more-button"
-          >
+          <button type="button" class="compare-button load-more-button">
             Load More Products
           </button>
         </div>
@@ -900,11 +1137,8 @@ async function renderProducts() {
       : "";
 
     productContainer.innerHTML = cardsHTML + loadMoreHTML;
-
   } catch (error) {
-    if (currentVersion !== renderVersion) {
-      return;
-    }
+    if (currentVersion !== renderVersion) return;
 
     console.error("Product loading error:", error);
 
@@ -914,72 +1148,19 @@ async function renderProducts() {
       <div class="no-results">
         <h3>Unable to load products</h3>
         <p>${escapeHTML(error.message)}</p>
-        <p>
-          Please check that the product JSON files are uploaded correctly.
-        </p>
+        <p>Please check that the product JSON files are uploaded correctly.</p>
       </div>
     `;
   }
 }
 
 // ==================================================
-// CATEGORY MENU ACCESSIBILITY
-// ==================================================
-
-function handleOutsideCategoryClick(event) {
-  if (
-    categoryContainer &&
-    !categoryContainer.contains(event.target)
-  ) {
-    closeCategoryMenu();
-
-    document.removeEventListener(
-      "click",
-      handleOutsideCategoryClick
-    );
-
-    document.removeEventListener(
-      "keydown",
-      handleCategoryEscape
-    );
-  }
-}
-
-function handleCategoryEscape(event) {
-  if (event.key !== "Escape") {
-    return;
-  }
-
-  closeCategoryMenu();
-
-  document.removeEventListener(
-    "click",
-    handleOutsideCategoryClick
-  );
-
-  document.removeEventListener(
-    "keydown",
-    handleCategoryEscape
-  );
-
-  const button = document.getElementById(
-    "ems-category-dropdown-button"
-  );
-
-  if (button) {
-    button.focus();
-  }
-}
-
-// ==================================================
-// CATALOGUE EVENT HANDLERS
+// PRODUCT GRID EVENTS
 // ==================================================
 
 if (productContainer) {
   productContainer.addEventListener("click", event => {
-    const loadMoreButton = event.target.closest(
-      ".load-more-button"
-    );
+    const loadMoreButton = event.target.closest(".load-more-button");
 
     if (loadMoreButton) {
       displayLimit += PRODUCTS_PER_PAGE;
@@ -987,23 +1168,21 @@ if (productContainer) {
       return;
     }
 
-    const addButton = event.target.closest(
-      ".add-to-cart-button"
-    );
+    const addButton = event.target.closest(".add-to-cart-button");
 
-    if (!addButton) {
-      return;
-    }
+    if (!addButton) return;
 
     const product = productCache.get(
       String(addButton.dataset.productId)
     );
 
-    if (product) {
-      addToCart(product);
-    }
+    if (product) addToCart(product);
   });
 }
+
+// ==================================================
+// LIVE SEARCH
+// ==================================================
 
 if (searchInput) {
   let searchTimer;
@@ -1013,11 +1192,13 @@ if (searchInput) {
 
     displayLimit = PRODUCTS_PER_PAGE;
 
-    searchTimer = setTimeout(() => {
-      renderProducts();
-    }, 150);
+    searchTimer = setTimeout(renderProducts, 150);
   });
 }
+
+// ==================================================
+// CATEGORY DROPDOWN EVENTS — FIXED
+// ==================================================
 
 if (categoryContainer) {
   categoryContainer.dataset.open = "false";
@@ -1037,26 +1218,32 @@ if (categoryContainer) {
 
       renderCategories();
 
+      document.removeEventListener(
+        "click",
+        handleOutsideCategoryClick
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleCategoryEscape
+      );
+
       if (!currentlyOpen) {
-        document.addEventListener(
-          "click",
-          handleOutsideCategoryClick
-        );
+        // Delay registration so the click that opens the menu
+        // cannot immediately close it during the same event.
+        setTimeout(() => {
+          if (categoryContainer.dataset.open === "true") {
+            document.addEventListener(
+              "click",
+              handleOutsideCategoryClick
+            );
 
-        document.addEventListener(
-          "keydown",
-          handleCategoryEscape
-        );
-      } else {
-        document.removeEventListener(
-          "click",
-          handleOutsideCategoryClick
-        );
-
-        document.removeEventListener(
-          "keydown",
-          handleCategoryEscape
-        );
+            document.addEventListener(
+              "keydown",
+              handleCategoryEscape
+            );
+          }
+        }, 0);
       }
 
       return;
@@ -1075,22 +1262,20 @@ if (categoryContainer) {
         expandedCategories.add(path);
       }
 
+      // Keep the dropdown open when expanding or collapsing a branch.
+      categoryContainer.dataset.open = "true";
       renderCategories();
+
       return;
     }
 
-    const categoryButton = event.target.closest(
-      ".category"
-    );
+    const categoryButton = event.target.closest(".category");
 
-    if (!categoryButton) {
-      return;
-    }
+    if (!categoryButton) return;
 
-    selectedCategory =
-      categoryButton.dataset.category || "All";
-
+    selectedCategory = categoryButton.dataset.category || "All";
     displayLimit = PRODUCTS_PER_PAGE;
+
     categoryContainer.dataset.open = "false";
 
     document.removeEventListener(
@@ -1108,27 +1293,69 @@ if (categoryContainer) {
   });
 }
 
+function handleOutsideCategoryClick(event) {
+  // Ignore the old click target if re-rendering detached it.
+  if (!event.target || !event.target.isConnected) return;
+
+  if (
+    categoryContainer &&
+    !categoryContainer.contains(event.target)
+  ) {
+    closeCategoryMenu();
+
+    document.removeEventListener(
+      "click",
+      handleOutsideCategoryClick
+    );
+
+    document.removeEventListener(
+      "keydown",
+      handleCategoryEscape
+    );
+  }
+}
+
+function handleCategoryEscape(event) {
+  if (event.key !== "Escape") return;
+
+  closeCategoryMenu();
+
+  document.removeEventListener(
+    "click",
+    handleOutsideCategoryClick
+  );
+
+  document.removeEventListener(
+    "keydown",
+    handleCategoryEscape
+  );
+
+  const button = document.getElementById(
+    "ems-category-dropdown-button"
+  );
+
+  if (button) button.focus();
+}
+
 // ==================================================
 // LOAD SEARCH INDEX
 // ==================================================
 
 async function initialiseCatalogue() {
   if (!productContainer || !searchInput || !resultCount) {
-    console.error(
-      "Required catalogue HTML elements are missing."
-    );
+    console.error("Required catalogue HTML elements are missing.");
     return;
   }
 
   updateCartCount();
+  injectAdvancedSearch();
 
   resultCount.textContent = "Loading product catalogue...";
 
   try {
-    const response = await fetch(
-      SEARCH_INDEX_FILE,
-      { cache: "no-store" }
-    );
+    const response = await fetch(SEARCH_INDEX_FILE, {
+      cache: "no-store"
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -1139,9 +1366,7 @@ async function initialiseCatalogue() {
     const data = await response.json();
 
     if (!Array.isArray(data)) {
-      throw new Error(
-        "The search index must contain a JSON array."
-      );
+      throw new Error("The search index must contain a JSON array.");
     }
 
     searchIndex = data.filter(product =>
@@ -1158,14 +1383,9 @@ async function initialiseCatalogue() {
     );
 
     renderCategories();
-
     await renderProducts();
-
   } catch (error) {
-    console.error(
-      "Catalogue initialisation error:",
-      error
-    );
+    console.error("Catalogue initialisation error:", error);
 
     resultCount.textContent = "Unable to load products";
 
