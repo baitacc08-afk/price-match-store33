@@ -644,8 +644,10 @@ function renderProduct(product) {
     Number.isFinite(Number(product.price)) &&
     Number(product.price) >= 0;
 
-  const price = priceAvailable
-    ? formatPrice(product.price, currency)
+const DISCOUNT_MULTIPLIER = 0.20;
+
+const price = priceAvailable
+    ? formatPrice(Number(product.price) * DISCOUNT_MULTIPLIER, currency)
     : "Price unavailable";
 
   const imageHTML = imageURL
