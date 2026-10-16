@@ -2,7 +2,8 @@
 
 // ==================================================
 // EMS AUTO PARTS — PRODUCT CATALOGUE
-// Supports 112,905 products across split JSON files.
+// Supports 112,905+ products across split JSON files.
+// Dynamic categories are generated from catalogue data.
 // ==================================================
 
 const SEARCH_INDEX_FILE = "./search_index_compact.json";
@@ -23,6 +24,9 @@ let renderVersion = 0;
 
 const productCache = new Map();
 const productFileCache = new Map();
+
+// Stores the expandable state of category groups.
+const expandedCategories = new Set();
 
 // ==================================================
 // HTML SAFETY
@@ -250,6 +254,246 @@ function addToCart(product) {
 }
 
 // ==================================================
+// CATEGORY DATA
+// ==================================================
+
+function normaliseCategoryPath(value) {
+  return String(value || "")
+    .split("/")
+    .map(part => part.trim())
+    .filter(Boolean)
+    .join("/");
+}
+
+function getCategoryParts(value) {
+  const normalised = normaliseCategoryPath(value);
+
+  return normalised
+    ? normalised.split("/")
+    : ["Uncategorised"];
+}
+
+// Build a hierarchy from the actual category paths in the index.
+// This avoids inventing categories or modifying product records.
+
+function buildCategoryTree() {
+  const root = {
+    name: "All Products",
+    path: "All",
+    children: new Map(),
+    count: 0
+  };
+
+  for (const product of searchIndex) {
+    const parts = getCategoryParts(product.category);
+
+    root.count++;
+
+    let currentNode = root;
+    let currentPath = "";
+
+    for (const part of parts) {
+      currentPath = currentPath
+        ? `${currentPath}/${part}`
+        : part;
+
+      if (!currentNode.children.has(part)) {
+        currentNode.children.set(part, {
+          name: part,
+          path: currentPath,
+          children: new Map(),
+          count: 0
+        });
+      }
+
+      currentNode = currentNode.children.get(part);
+      currentNode.count++;
+    }
+  }
+
+  return root;
+}
+
+// ==================================================
+// CATEGORY DISPLAY
+// ==================================================
+
+function injectCategoryStyles() {
+  if (document.getElementById("ems-category-styles")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "ems-category-styles";
+
+  style.textContent = `
+    #categories .ems-category-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #categories .ems-category-item {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #categories .ems-category-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+    }
+
+    #categories .category {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+
+    #categories .ems-category-toggle {
+      flex: 0 0 32px;
+      min-width: 32px;
+      min-height: 32px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+    }
+
+    #categories .ems-category-toggle:hover {
+      border-color: #ff6a00;
+    }
+
+    #categories .ems-category-toggle:focus-visible,
+    #categories .category:focus-visible {
+      outline: 2px solid #ff6a00;
+      outline-offset: 2px;
+    }
+
+    #categories .ems-category-children {
+      padding-left: 14px;
+      margin: 3px 0 6px;
+      border-left: 1px solid rgba(255, 106, 0, 0.35);
+    }
+
+    #categories .ems-category-count {
+      display: inline-block;
+      margin-left: 6px;
+      opacity: 0.7;
+      font-size: 0.82em;
+      white-space: nowrap;
+    }
+
+    #categories .ems-all-products {
+      margin-bottom: 8px;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function renderCategoryNode(node, depth = 0) {
+  const hasChildren = node.children.size > 0;
+  const expanded = expandedCategories.has(node.path);
+  const active = selectedCategory === node.path;
+
+  const childNodes = [...node.children.values()]
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const childrenHTML = hasChildren && expanded
+    ? `
+      <ul class="ems-category-list ems-category-children">
+        ${childNodes
+          .map(child => renderCategoryNode(child, depth + 1))
+          .join("")}
+      </ul>
+    `
+    : "";
+
+  const toggleHTML = hasChildren
+    ? `
+      <button
+        type="button"
+        class="ems-category-toggle"
+        data-toggle-category="${escapeHTML(node.path)}"
+        aria-expanded="${expanded}"
+        aria-label="${expanded ? "Collapse" : "Expand"} ${escapeHTML(node.name)}"
+        title="${expanded ? "Collapse" : "Expand"} ${escapeHTML(node.name)}"
+      >${expanded ? "−" : "+"}</button>
+    `
+    : `
+      <span style="flex: 0 0 32px;"></span>
+    `;
+
+  return `
+    <li class="ems-category-item">
+      <div class="ems-category-row">
+        ${toggleHTML}
+
+        <button
+          type="button"
+          class="category${active ? " active" : ""}"
+          data-category="${escapeHTML(node.path)}"
+          aria-pressed="${active}"
+          title="${escapeHTML(node.path)}"
+        >
+          ${escapeHTML(node.name)}
+          <span class="ems-category-count">
+            ${node.count.toLocaleString()}
+          </span>
+        </button>
+      </div>
+
+      ${childrenHTML}
+    </li>
+  `;
+}
+
+function renderCategories() {
+  if (!categoryContainer) {
+    return;
+  }
+
+  injectCategoryStyles();
+
+  const tree = buildCategoryTree();
+
+  const allActive = selectedCategory === "All";
+
+  const rootCategories = [...tree.children.values()]
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  categoryContainer.innerHTML = `
+    <div class="ems-all-products">
+      <button
+        type="button"
+        class="category${allActive ? " active" : ""}"
+        data-category="All"
+        aria-pressed="${allActive}"
+      >
+        All Products
+        <span class="ems-category-count">
+          ${searchIndex.length.toLocaleString()}
+        </span>
+      </button>
+    </div>
+
+    <ul class="ems-category-list">
+      ${rootCategories
+        .map(node => renderCategoryNode(node))
+        .join("")}
+    </ul>
+  `;
+}
+
+// ==================================================
 // CATEGORY FILTERING
 // ==================================================
 
@@ -258,24 +502,15 @@ function matchesCategory(product) {
     return true;
   }
 
-  const category = String(product.category || "").toLowerCase();
-  const name = String(product.name || "").toLowerCase();
+  const productCategory = normaliseCategoryPath(product.category);
+  const selectedPath = normaliseCategoryPath(selectedCategory);
 
-  const combined = `${category} ${name}`;
-
-  switch (selectedCategory) {
-    case "Oils & Fluids":
-      return /oil|fluid|lubricant|additive|filter|coolant/.test(combined);
-
-    case "Tools":
-      return /tools?|tool kits?|equipment|workshop/.test(combined);
-
-    case "Accessories":
-      return /accessor|interior|exterior|car care|cleaning|paint/.test(combined);
-
-    default:
-      return category === selectedCategory.toLowerCase();
-  }
+  // Include products directly in this category and in any
+  // nested subcategory beneath it.
+  return (
+    productCategory === selectedPath ||
+    productCategory.startsWith(`${selectedPath}/`)
+  );
 }
 
 // ==================================================
@@ -284,18 +519,20 @@ function matchesCategory(product) {
 
 async function loadProductFile(filename) {
   if (!filename || typeof filename !== "string") {
-    throw new Error("A product file is missing from the search index.");
+    throw new Error(
+      "A product file is missing from the search index."
+    );
   }
 
-  // Reuse an existing request or cached file.
   if (productFileCache.has(filename)) {
     return productFileCache.get(filename);
   }
 
   const request = (async () => {
-    const response = await fetch(`./${encodeURIComponent(filename)}`, {
-      cache: "force-cache"
-    });
+    const response = await fetch(
+      `./${encodeURIComponent(filename)}`,
+      { cache: "force-cache" }
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -306,7 +543,9 @@ async function loadProductFile(filename) {
     const products = await response.json();
 
     if (!Array.isArray(products)) {
-      throw new Error(`${filename} does not contain a product array.`);
+      throw new Error(
+        `${filename} does not contain a product array.`
+      );
     }
 
     for (const product of products) {
@@ -330,7 +569,11 @@ async function loadProductFile(filename) {
 
 async function loadProductsForEntries(entries) {
   const filenames = [
-    ...new Set(entries.map(entry => entry.file).filter(Boolean))
+    ...new Set(
+      entries
+        .map(entry => entry.file)
+        .filter(Boolean)
+    )
   ];
 
   await Promise.all(
@@ -377,14 +620,25 @@ function findMatchingEntries() {
 // ==================================================
 
 function createProductCard(product) {
-  const name = escapeHTML(product.name || "Unnamed product");
-  const brand = escapeHTML(product.brand || "Brand unavailable");
-  const category = escapeHTML(product.category || "Uncategorised");
+  const name = escapeHTML(
+    product.name || "Unnamed product"
+  );
+
+  const brand = escapeHTML(
+    product.brand || "Brand unavailable"
+  );
+
+  const category = escapeHTML(
+    product.category || "Uncategorised"
+  );
 
   const discountedPrice = getEMSPrice(product.price);
 
   const price = escapeHTML(
-    formatPrice(discountedPrice, product.currency || "AUD")
+    formatPrice(
+      discountedPrice,
+      product.currency || "AUD"
+    )
   );
 
   const imageURL = getProductImage(product);
@@ -464,7 +718,7 @@ async function renderProducts() {
   const totalMatches = matchingEntries.length;
   const visibleEntries = matchingEntries.slice(0, displayLimit);
 
-  resultCount.textContent = `Loading products...`;
+  resultCount.textContent = "Loading products...";
 
   if (totalMatches === 0) {
     resultCount.textContent = "0 products";
@@ -472,7 +726,7 @@ async function renderProducts() {
     productContainer.innerHTML = `
       <div class="no-results">
         <h3>No products found</h3>
-        <p>Try another search or select All products.</p>
+        <p>Try another search or select All Products.</p>
       </div>
     `;
 
@@ -488,7 +742,6 @@ async function renderProducts() {
   try {
     const products = await loadProductsForEntries(visibleEntries);
 
-    // Ignore old requests if the user searched again.
     if (currentVersion !== renderVersion) {
       return;
     }
@@ -540,7 +793,9 @@ async function renderProducts() {
 
 if (productContainer) {
   productContainer.addEventListener("click", event => {
-    const loadMoreButton = event.target.closest(".load-more-button");
+    const loadMoreButton = event.target.closest(
+      ".load-more-button"
+    );
 
     if (loadMoreButton) {
       displayLimit += PRODUCTS_PER_PAGE;
@@ -548,7 +803,9 @@ if (productContainer) {
       return;
     }
 
-    const addButton = event.target.closest(".add-to-cart-button");
+    const addButton = event.target.closest(
+      ".add-to-cart-button"
+    );
 
     if (!addButton) {
       return;
@@ -580,6 +837,23 @@ if (searchInput) {
 
 if (categoryContainer) {
   categoryContainer.addEventListener("click", event => {
+    const toggleButton = event.target.closest(
+      "[data-toggle-category]"
+    );
+
+    if (toggleButton) {
+      const path = toggleButton.dataset.toggleCategory;
+
+      if (expandedCategories.has(path)) {
+        expandedCategories.delete(path);
+      } else {
+        expandedCategories.add(path);
+      }
+
+      renderCategories();
+      return;
+    }
+
     const button = event.target.closest(".category");
 
     if (!button) {
@@ -589,13 +863,7 @@ if (categoryContainer) {
     selectedCategory = button.dataset.category || "All";
     displayLimit = PRODUCTS_PER_PAGE;
 
-    document.querySelectorAll(".category").forEach(categoryButton => {
-      const active = categoryButton === button;
-
-      categoryButton.classList.toggle("active", active);
-      categoryButton.setAttribute("aria-pressed", String(active));
-    });
-
+    renderCategories();
     renderProducts();
   });
 }
@@ -606,7 +874,9 @@ if (categoryContainer) {
 
 async function initialiseCatalogue() {
   if (!productContainer || !searchInput || !resultCount) {
-    console.error("Required catalogue HTML elements are missing.");
+    console.error(
+      "Required catalogue HTML elements are missing."
+    );
     return;
   }
 
@@ -615,9 +885,10 @@ async function initialiseCatalogue() {
   resultCount.textContent = "Loading product catalogue...";
 
   try {
-    const response = await fetch(SEARCH_INDEX_FILE, {
-      cache: "no-store"
-    });
+    const response = await fetch(
+      SEARCH_INDEX_FILE,
+      { cache: "no-store" }
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -628,7 +899,9 @@ async function initialiseCatalogue() {
     const data = await response.json();
 
     if (!Array.isArray(data)) {
-      throw new Error("The search index must contain a JSON array.");
+      throw new Error(
+        "The search index must contain a JSON array."
+      );
     }
 
     searchIndex = data.filter(product =>
@@ -644,10 +917,15 @@ async function initialiseCatalogue() {
       "products"
     );
 
+    renderCategories();
+
     await renderProducts();
 
   } catch (error) {
-    console.error("Catalogue initialisation error:", error);
+    console.error(
+      "Catalogue initialisation error:",
+      error
+    );
 
     resultCount.textContent = "Unable to load products";
 
