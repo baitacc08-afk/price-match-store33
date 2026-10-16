@@ -3,7 +3,7 @@
 // ==================================================
 // EMS AUTO PARTS — PRODUCT CATALOGUE
 // Supports 112,905+ products across split JSON files.
-// Dynamic categories are generated from catalogue data.
+// Compact dropdown categories generated from catalogue data.
 // ==================================================
 
 const SEARCH_INDEX_FILE = "./search_index_compact.json";
@@ -24,8 +24,6 @@ let renderVersion = 0;
 
 const productCache = new Map();
 const productFileCache = new Map();
-
-// Stores the expandable state of category groups.
 const expandedCategories = new Set();
 
 // ==================================================
@@ -273,9 +271,6 @@ function getCategoryParts(value) {
     : ["Uncategorised"];
 }
 
-// Build a hierarchy from the actual category paths in the index.
-// This avoids inventing categories or modifying product records.
-
 function buildCategoryTree() {
   const root = {
     name: "All Products",
@@ -315,7 +310,7 @@ function buildCategoryTree() {
 }
 
 // ==================================================
-// CATEGORY DISPLAY
+// COMPACT CATEGORY DROPDOWN STYLING
 // ==================================================
 
 function injectCategoryStyles() {
@@ -324,9 +319,76 @@ function injectCategoryStyles() {
   }
 
   const style = document.createElement("style");
+
   style.id = "ems-category-styles";
 
   style.textContent = `
+    #categories {
+      position: relative;
+      display: inline-block;
+      width: auto;
+      max-width: 100%;
+      margin: 0 0 16px;
+      z-index: 20;
+    }
+
+    #categories .ems-category-dropdown-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-width: 190px;
+      max-width: min(360px, calc(100vw - 32px));
+      padding: 11px 14px;
+      border: 1px solid rgba(255, 106, 0, 0.65);
+      border-radius: 8px;
+      background: #171717;
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
+    }
+
+    #categories .ems-category-dropdown-button:hover,
+    #categories .ems-category-dropdown-button:focus-visible {
+      border-color: #ff6a00;
+      outline: none;
+    }
+
+    #categories .ems-category-chevron {
+      color: #ff6a00;
+      font-size: 0.9em;
+      transition: transform 160ms ease;
+    }
+
+    #categories .ems-category-dropdown-button[aria-expanded="true"]
+    .ems-category-chevron {
+      transform: rotate(180deg);
+    }
+
+    #categories .ems-category-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: min(360px, calc(100vw - 32px));
+      max-height: min(65vh, 520px);
+      overflow-y: auto;
+      padding: 8px;
+      margin: 0;
+      border: 1px solid rgba(255, 106, 0, 0.45);
+      border-radius: 9px;
+      background: #171717;
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      list-style: none;
+    }
+
+    #categories .ems-category-menu[hidden] {
+      display: none;
+    }
+
     #categories .ems-category-list {
       list-style: none;
       padding: 0;
@@ -349,19 +411,36 @@ function injectCategoryStyles() {
     #categories .category {
       flex: 1;
       min-width: 0;
+      width: 100%;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
       text-align: left;
+      cursor: pointer;
+    }
+
+    #categories .category:hover {
+      background: rgba(255, 106, 0, 0.12);
+    }
+
+    #categories .category.active {
+      background: rgba(255, 106, 0, 0.2);
+      color: #ff8a38;
     }
 
     #categories .ems-category-toggle {
-      flex: 0 0 32px;
-      min-width: 32px;
-      min-height: 32px;
+      flex: 0 0 30px;
+      width: 30px;
+      min-height: 30px;
       display: inline-flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 5px;
       background: transparent;
       color: inherit;
       font: inherit;
@@ -369,37 +448,54 @@ function injectCategoryStyles() {
 
     #categories .ems-category-toggle:hover {
       border-color: #ff6a00;
+      color: #ff8a38;
     }
 
     #categories .ems-category-toggle:focus-visible,
     #categories .category:focus-visible {
       outline: 2px solid #ff6a00;
-      outline-offset: 2px;
+      outline-offset: 1px;
     }
 
     #categories .ems-category-children {
-      padding-left: 14px;
-      margin: 3px 0 6px;
+      padding-left: 12px;
+      margin: 2px 0 5px 8px;
       border-left: 1px solid rgba(255, 106, 0, 0.35);
     }
 
     #categories .ems-category-count {
       display: inline-block;
-      margin-left: 6px;
-      opacity: 0.7;
-      font-size: 0.82em;
+      margin-left: 5px;
+      opacity: 0.65;
+      font-size: 0.8em;
       white-space: nowrap;
     }
 
-    #categories .ems-all-products {
-      margin-bottom: 8px;
+    #categories .ems-category-all {
+      padding-bottom: 5px;
+      margin-bottom: 5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 600px) {
+      #categories .ems-category-dropdown-button {
+        min-width: 170px;
+      }
+
+      #categories .ems-category-menu {
+        width: min(330px, calc(100vw - 28px));
+      }
     }
   `;
 
   document.head.appendChild(style);
 }
 
-function renderCategoryNode(node, depth = 0) {
+// ==================================================
+// RENDER CATEGORY TREE
+// ==================================================
+
+function renderCategoryNode(node) {
   const hasChildren = node.children.size > 0;
   const expanded = expandedCategories.has(node.path);
   const active = selectedCategory === node.path;
@@ -411,7 +507,7 @@ function renderCategoryNode(node, depth = 0) {
     ? `
       <ul class="ems-category-list ems-category-children">
         ${childNodes
-          .map(child => renderCategoryNode(child, depth + 1))
+          .map(child => renderCategoryNode(child))
           .join("")}
       </ul>
     `
@@ -429,7 +525,7 @@ function renderCategoryNode(node, depth = 0) {
       >${expanded ? "−" : "+"}</button>
     `
     : `
-      <span style="flex: 0 0 32px;"></span>
+      <span style="flex: 0 0 30px;"></span>
     `;
 
   return `
@@ -456,6 +552,10 @@ function renderCategoryNode(node, depth = 0) {
   `;
 }
 
+// ==================================================
+// RENDER CATEGORY DROPDOWN
+// ==================================================
+
 function renderCategories() {
   if (!categoryContainer) {
     return;
@@ -465,32 +565,69 @@ function renderCategories() {
 
   const tree = buildCategoryTree();
 
-  const allActive = selectedCategory === "All";
-
   const rootCategories = [...tree.children.values()]
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  categoryContainer.innerHTML = `
-    <div class="ems-all-products">
-      <button
-        type="button"
-        class="category${allActive ? " active" : ""}"
-        data-category="All"
-        aria-pressed="${allActive}"
-      >
-        All Products
-        <span class="ems-category-count">
-          ${searchIndex.length.toLocaleString()}
-        </span>
-      </button>
-    </div>
+  const selectedLabel = selectedCategory === "All"
+    ? "All Products"
+    : selectedCategory.split("/").pop();
 
-    <ul class="ems-category-list">
-      ${rootCategories
-        .map(node => renderCategoryNode(node))
-        .join("")}
-    </ul>
+  const menuOpen = categoryContainer.dataset.open === "true";
+
+  categoryContainer.innerHTML = `
+    <button
+      type="button"
+      class="ems-category-dropdown-button"
+      id="ems-category-dropdown-button"
+      aria-haspopup="true"
+      aria-expanded="${menuOpen}"
+      aria-controls="ems-category-menu"
+    >
+      <span>
+        Categories:
+        <span id="ems-selected-category">
+          ${escapeHTML(selectedLabel)}
+        </span>
+      </span>
+
+      <span class="ems-category-chevron" aria-hidden="true">▼</span>
+    </button>
+
+    <div
+      class="ems-category-menu"
+      id="ems-category-menu"
+      ${menuOpen ? "" : "hidden"}
+    >
+      <div class="ems-category-all">
+        <button
+          type="button"
+          class="category${selectedCategory === "All" ? " active" : ""}"
+          data-category="All"
+          aria-pressed="${selectedCategory === "All"}"
+        >
+          All Products
+          <span class="ems-category-count">
+            ${searchIndex.length.toLocaleString()}
+          </span>
+        </button>
+      </div>
+
+      <ul class="ems-category-list">
+        ${rootCategories
+          .map(node => renderCategoryNode(node))
+          .join("")}
+      </ul>
+    </div>
   `;
+}
+
+function closeCategoryMenu() {
+  if (!categoryContainer) {
+    return;
+  }
+
+  categoryContainer.dataset.open = "false";
+  renderCategories();
 }
 
 // ==================================================
@@ -505,8 +642,6 @@ function matchesCategory(product) {
   const productCategory = normaliseCategoryPath(product.category);
   const selectedPath = normaliseCategoryPath(selectedCategory);
 
-  // Include products directly in this category and in any
-  // nested subcategory beneath it.
   return (
     productCategory === selectedPath ||
     productCategory.startsWith(`${selectedPath}/`)
@@ -606,10 +741,8 @@ function findMatchingEntries() {
   const query = searchInput.value.trim().toLowerCase();
 
   return searchIndex.filter(product => {
-    const searchableText = getSearchText(product);
-
     return (
-      searchableText.includes(query) &&
+      getSearchText(product).includes(query) &&
       matchesCategory(product)
     );
   });
@@ -781,9 +914,60 @@ async function renderProducts() {
       <div class="no-results">
         <h3>Unable to load products</h3>
         <p>${escapeHTML(error.message)}</p>
-        <p>Please check that the product JSON files are uploaded correctly.</p>
+        <p>
+          Please check that the product JSON files are uploaded correctly.
+        </p>
       </div>
     `;
+  }
+}
+
+// ==================================================
+// CATEGORY MENU ACCESSIBILITY
+// ==================================================
+
+function handleOutsideCategoryClick(event) {
+  if (
+    categoryContainer &&
+    !categoryContainer.contains(event.target)
+  ) {
+    closeCategoryMenu();
+
+    document.removeEventListener(
+      "click",
+      handleOutsideCategoryClick
+    );
+
+    document.removeEventListener(
+      "keydown",
+      handleCategoryEscape
+    );
+  }
+}
+
+function handleCategoryEscape(event) {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  closeCategoryMenu();
+
+  document.removeEventListener(
+    "click",
+    handleOutsideCategoryClick
+  );
+
+  document.removeEventListener(
+    "keydown",
+    handleCategoryEscape
+  );
+
+  const button = document.getElementById(
+    "ems-category-dropdown-button"
+  );
+
+  if (button) {
+    button.focus();
   }
 }
 
@@ -836,7 +1020,48 @@ if (searchInput) {
 }
 
 if (categoryContainer) {
+  categoryContainer.dataset.open = "false";
+
   categoryContainer.addEventListener("click", event => {
+    const dropdownButton = event.target.closest(
+      "#ems-category-dropdown-button"
+    );
+
+    if (dropdownButton) {
+      const currentlyOpen =
+        categoryContainer.dataset.open === "true";
+
+      categoryContainer.dataset.open = currentlyOpen
+        ? "false"
+        : "true";
+
+      renderCategories();
+
+      if (!currentlyOpen) {
+        document.addEventListener(
+          "click",
+          handleOutsideCategoryClick
+        );
+
+        document.addEventListener(
+          "keydown",
+          handleCategoryEscape
+        );
+      } else {
+        document.removeEventListener(
+          "click",
+          handleOutsideCategoryClick
+        );
+
+        document.removeEventListener(
+          "keydown",
+          handleCategoryEscape
+        );
+      }
+
+      return;
+    }
+
     const toggleButton = event.target.closest(
       "[data-toggle-category]"
     );
@@ -854,14 +1079,29 @@ if (categoryContainer) {
       return;
     }
 
-    const button = event.target.closest(".category");
+    const categoryButton = event.target.closest(
+      ".category"
+    );
 
-    if (!button) {
+    if (!categoryButton) {
       return;
     }
 
-    selectedCategory = button.dataset.category || "All";
+    selectedCategory =
+      categoryButton.dataset.category || "All";
+
     displayLimit = PRODUCTS_PER_PAGE;
+    categoryContainer.dataset.open = "false";
+
+    document.removeEventListener(
+      "click",
+      handleOutsideCategoryClick
+    );
+
+    document.removeEventListener(
+      "keydown",
+      handleCategoryEscape
+    );
 
     renderCategories();
     renderProducts();
