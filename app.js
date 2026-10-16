@@ -1,23 +1,32 @@
 "use strict";
 
-// ------------------------------
-// PAGE ELEMENTS AND CONFIGURATION
-// ------------------------------
+// ==================================================
+// EMS AUTO PARTS — PRODUCT CATALOGUE
+// Supports 112,905 products across split JSON files.
+// ==================================================
+
+const SEARCH_INDEX_FILE = "./search_index_compact.json";
+const CART_STORAGE_KEY = "ems-auto-parts-cart";
+
+const PRODUCTS_PER_PAGE = 24;
+const DISCOUNT_MULTIPLIER = 0.25;
 
 const productContainer = document.getElementById("products");
 const searchInput = document.getElementById("search");
 const resultCount = document.getElementById("result-count");
 const categoryContainer = document.getElementById("categories");
 
-const CATALOGUE_FILE = "./supercheap_products.json";
-const CART_STORAGE_KEY = "ems-auto-parts-cart";
-
-let allProducts = [];
+let searchIndex = [];
 let selectedCategory = "All";
+let displayLimit = PRODUCTS_PER_PAGE;
+let renderVersion = 0;
 
-// ------------------------------
-// SAFELY ESCAPE HTML
-// ------------------------------
+const productCache = new Map();
+const productFileCache = new Map();
+
+// ==================================================
+// HTML SAFETY
+// ==================================================
 
 function escapeHTML(value = "") {
   return String(value).replace(/[&<>"']/g, character => ({
@@ -29,9 +38,25 @@ function escapeHTML(value = "") {
   })[character]);
 }
 
-// ------------------------------
-// FORMAT PRICES
-// ------------------------------
+// ==================================================
+// PRICES
+// ==================================================
+
+function getEMSPrice(price) {
+  if (
+    price === null ||
+    price === undefined ||
+    price === "" ||
+    !Number.isFinite(Number(price)) ||
+    Number(price) < 0
+  ) {
+    return null;
+  }
+
+  return Math.round(
+    (Number(price) * DISCOUNT_MULTIPLIER + Number.EPSILON) * 100
+  ) / 100;
+}
 
 function formatPrice(price, currency = "AUD") {
   if (
@@ -53,29 +78,9 @@ function formatPrice(price, currency = "AUD") {
   }
 }
 
-// ------------------------------
-// EMS AUTO PARTS PRICING
-// 75% BELOW THE STORED CATALOGUE PRICE
-// ------------------------------
-
-function getEMSPrice(price) {
-  if (
-    price === null ||
-    price === undefined ||
-    price === "" ||
-    !Number.isFinite(Number(price)) ||
-    Number(price) < 0
-  ) {
-    return null;
-  }
-
-  // Selling price is 25% of the original price.
-  return Math.round((Number(price) * 0.25 + Number.EPSILON) * 100) / 100;
-}
-
-// ------------------------------
-// PRODUCT IMAGES
-// ------------------------------
+// ==================================================
+// PRODUCT IMAGES AND URLS
+// ==================================================
 
 function getProductImage(product) {
   if (!product || !product.image) {
@@ -98,10 +103,6 @@ function getProductImage(product) {
   return "";
 }
 
-// ------------------------------
-// PRODUCT URLS
-// ------------------------------
-
 function getProductURL(product) {
   if (!product || !product.productUrl) {
     return "";
@@ -110,7 +111,10 @@ function getProductURL(product) {
   try {
     const url = new URL(product.productUrl);
 
-    if (url.protocol === "https:") {
+    if (
+      url.protocol === "https:" &&
+      url.hostname === "www.supercheapauto.com.au"
+    ) {
       return url.href;
     }
   } catch {
@@ -120,9 +124,9 @@ function getProductURL(product) {
   return "";
 }
 
-// ------------------------------
+// ==================================================
 // SHOPPING CART
-// ------------------------------
+// ==================================================
 
 function getCart() {
   try {
@@ -178,18 +182,22 @@ function updateCartCount() {
   );
 }
 
-// ------------------------------
-// ADD PRODUCTS TO CART
-// ------------------------------
-
 function addToCart(product) {
   if (!product || !product.id) {
     alert("This product cannot be added to your cart.");
     return;
   }
 
-  const cart = getCart();
   const discountedPrice = getEMSPrice(product.price);
+
+  if (discountedPrice === null) {
+    alert(
+      "This product has no available price and cannot be added to your cart."
+    );
+    return;
+  }
+
+  const cart = getCart();
 
   const existingItem = cart.find(
     item => String(item.id) === String(product.id)
@@ -199,9 +207,11 @@ function addToCart(product) {
     existingItem.name = product.name || existingItem.name;
     existingItem.brand = product.brand || existingItem.brand;
     existingItem.price = discountedPrice;
+    existingItem.originalPrice = Number(product.price);
     existingItem.currency = product.currency || "AUD";
     existingItem.image = getProductImage(product);
     existingItem.productUrl = getProductURL(product);
+    existingItem.discountPercentage = 75;
 
     existingItem.quantity =
       (Number(existingItem.quantity) || 0) + 1;
@@ -210,27 +220,25 @@ function addToCart(product) {
       id: product.id,
       name: product.name || "Unnamed product",
       brand: product.brand || "",
+      originalPrice: Number(product.price),
       price: discountedPrice,
       currency: product.currency || "AUD",
       image: getProductImage(product),
       productUrl: getProductURL(product),
+      discountPercentage: 75,
       quantity: 1
     });
   }
 
   if (saveCart(cart)) {
-    const productIndex = allProducts.indexOf(product);
-
-    const button = productContainer
-      ? productContainer.querySelector(
-          `.add-to-cart-button[data-product-index="${productIndex}"]`
-        )
-      : null;
+    const button = productContainer.querySelector(
+      `.add-to-cart-button[data-product-id="${CSS.escape(String(product.id))}"]`
+    );
 
     if (button) {
       const originalText = button.textContent;
 
-      button.textContent = "✓ Added!";
+      button.textContent = "Added!";
       button.disabled = true;
 
       setTimeout(() => {
@@ -241,9 +249,9 @@ function addToCart(product) {
   }
 }
 
-// ------------------------------
-// CATEGORY FILTERS
-// ------------------------------
+// ==================================================
+// CATEGORY FILTERING
+// ==================================================
 
 function matchesCategory(product) {
   if (selectedCategory === "All") {
@@ -252,6 +260,7 @@ function matchesCategory(product) {
 
   const category = String(product.category || "").toLowerCase();
   const name = String(product.name || "").toLowerCase();
+
   const combined = `${category} ${name}`;
 
   switch (selectedCategory) {
@@ -269,42 +278,199 @@ function matchesCategory(product) {
   }
 }
 
-// ------------------------------
-// RENDER PRODUCT CATALOGUE
-// ------------------------------
+// ==================================================
+// LOAD INDIVIDUAL PRODUCT FILES
+// ==================================================
 
-function renderProducts() {
-  if (!productContainer || !searchInput || !resultCount) {
-    console.error("Required product catalogue elements are missing.");
-    return;
+async function loadProductFile(filename) {
+  if (!filename || typeof filename !== "string") {
+    throw new Error("A product file is missing from the search index.");
   }
 
+  // Reuse an existing request or cached file.
+  if (productFileCache.has(filename)) {
+    return productFileCache.get(filename);
+  }
+
+  const request = (async () => {
+    const response = await fetch(`./${encodeURIComponent(filename)}`, {
+      cache: "force-cache"
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Unable to load ${filename}: HTTP ${response.status}`
+      );
+    }
+
+    const products = await response.json();
+
+    if (!Array.isArray(products)) {
+      throw new Error(`${filename} does not contain a product array.`);
+    }
+
+    for (const product of products) {
+      if (product && product.id !== undefined) {
+        productCache.set(String(product.id), product);
+      }
+    }
+
+    return products;
+  })();
+
+  productFileCache.set(filename, request);
+
+  try {
+    return await request;
+  } catch (error) {
+    productFileCache.delete(filename);
+    throw error;
+  }
+}
+
+async function loadProductsForEntries(entries) {
+  const filenames = [
+    ...new Set(entries.map(entry => entry.file).filter(Boolean))
+  ];
+
+  await Promise.all(
+    filenames.map(filename => loadProductFile(filename))
+  );
+
+  return entries
+    .map(entry => productCache.get(String(entry.id)))
+    .filter(Boolean);
+}
+
+// ==================================================
+// SEARCH INDEX
+// ==================================================
+
+function getSearchText(product) {
+  return [
+    product.name,
+    product.brand,
+    product.sku,
+    product.category,
+    product.id
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function findMatchingEntries() {
   const query = searchInput.value.trim().toLowerCase();
 
-  const filteredProducts = allProducts.filter(product => {
-    const searchableText = [
-      product.name,
-      product.brand,
-      product.sku,
-      product.category
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
+  return searchIndex.filter(product => {
+    const searchableText = getSearchText(product);
 
     return (
       searchableText.includes(query) &&
       matchesCategory(product)
     );
   });
+}
 
-  resultCount.textContent =
-    `${filteredProducts.length} product` +
-    `${filteredProducts.length === 1 ? "" : "s"}`;
+// ==================================================
+// PRODUCT CARDS
+// ==================================================
 
-  if (filteredProducts.length === 0) {
+function createProductCard(product) {
+  const name = escapeHTML(product.name || "Unnamed product");
+  const brand = escapeHTML(product.brand || "Brand unavailable");
+  const category = escapeHTML(product.category || "Uncategorised");
+
+  const discountedPrice = getEMSPrice(product.price);
+
+  const price = escapeHTML(
+    formatPrice(discountedPrice, product.currency || "AUD")
+  );
+
+  const imageURL = getProductImage(product);
+
+  const imageHTML = imageURL
+    ? `
+      <img
+        src="${escapeHTML(imageURL)}"
+        alt="${name}"
+        loading="lazy"
+        decoding="async"
+      >
+    `
+    : `<span>Image unavailable</span>`;
+
+  return `
+    <article class="product-card">
+
+      <div class="product-image">
+        ${imageHTML}
+      </div>
+
+      <div class="product-info">
+
+        <span class="product-category">
+          ${category}
+        </span>
+
+        <h3>${name}</h3>
+
+        <p class="product-brand">
+          ${brand}
+        </p>
+
+        <p class="product-price">
+          ${price}
+        </p>
+
+        <p class="price-label">
+          EMS Auto Parts
+        </p>
+
+        <a
+          class="compare-button details-button"
+          href="./product.html?id=${encodeURIComponent(String(product.id))}"
+        >
+          View product details
+        </a>
+
+        <button
+          type="button"
+          class="compare-button add-to-cart-button"
+          data-product-id="${escapeHTML(String(product.id))}"
+          ${discountedPrice === null ? "disabled" : ""}
+        >
+          Add to Cart
+        </button>
+
+      </div>
+
+    </article>
+  `;
+}
+
+// ==================================================
+// RENDER SEARCH RESULTS
+// ==================================================
+
+async function renderProducts() {
+  if (!productContainer || !searchInput || !resultCount) {
+    return;
+  }
+
+  const currentVersion = ++renderVersion;
+  const matchingEntries = findMatchingEntries();
+
+  const totalMatches = matchingEntries.length;
+  const visibleEntries = matchingEntries.slice(0, displayLimit);
+
+  resultCount.textContent = `Loading products...`;
+
+  if (totalMatches === 0) {
+    resultCount.textContent = "0 products";
+
     productContainer.innerHTML = `
-      <div class="empty-state">
+      <div class="no-results">
         <h3>No products found</h3>
         <p>Try another search or select All products.</p>
       </div>
@@ -313,130 +479,104 @@ function renderProducts() {
     return;
   }
 
-  productContainer.innerHTML = filteredProducts
-    .map(product => {
-      const name = escapeHTML(
-        product.name || "Unnamed product"
-      );
+  productContainer.innerHTML = `
+    <div class="no-results">
+      <p>Loading matching products...</p>
+    </div>
+  `;
 
-      const brand = escapeHTML(
-        product.brand || "Brand unavailable"
-      );
+  try {
+    const products = await loadProductsForEntries(visibleEntries);
 
-      const category = escapeHTML(
-        product.category || "Uncategorised"
-      );
+    // Ignore old requests if the user searched again.
+    if (currentVersion !== renderVersion) {
+      return;
+    }
 
-      const discountedPrice = getEMSPrice(product.price);
+    resultCount.textContent =
+      `Showing ${products.length} of ${totalMatches.toLocaleString()} products`;
 
-      const price = escapeHTML(
-        formatPrice(
-          discountedPrice,
-          product.currency || "AUD"
-        )
-      );
+    const cardsHTML = products
+      .map(createProductCard)
+      .join("");
 
-      const imageURL = getProductImage(product);
-      const productIndex = allProducts.indexOf(product);
-
-      const imageHTML = imageURL
-        ? `
-          <img
-            src="${escapeHTML(imageURL)}"
-            alt="${name}"
-            loading="lazy"
+    const loadMoreHTML = totalMatches > displayLimit
+      ? `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 20px;">
+          <button
+            type="button"
+            class="compare-button load-more-button"
           >
-        `
-        : `<span>Image unavailable</span>`;
+            Load More Products
+          </button>
+        </div>
+      `
+      : "";
 
-      return `
-        <article class="product-card">
+    productContainer.innerHTML = cardsHTML + loadMoreHTML;
 
-          <div class="product-image">
-            ${imageHTML}
-          </div>
+  } catch (error) {
+    if (currentVersion !== renderVersion) {
+      return;
+    }
 
-          <div class="product-info">
+    console.error("Product loading error:", error);
 
-            <span class="product-category">
-              ${category}
-            </span>
+    resultCount.textContent = "Unable to load products";
 
-            <h3>${name}</h3>
-
-            <p class="product-brand">
-              ${brand}
-            </p>
-
-            <p class="product-price">
-              ${price}
-            </p>
-
-            <p class="price-label">
-              EMS Auto Parts
-            </p>
-
-            <a
-              class="compare-button details-button"
-              href="./product.html?id=${encodeURIComponent(product.id)}"
-            >
-              View product details
-            </a>
-
-            <button
-              type="button"
-              class="compare-button add-to-cart-button"
-              data-product-index="${productIndex}"
-            >
-              🛒 Add to Cart
-            </button>
-
-          </div>
-
-        </article>
-      `;
-    })
-    .join("");
+    productContainer.innerHTML = `
+      <div class="no-results">
+        <h3>Unable to load products</h3>
+        <p>${escapeHTML(error.message)}</p>
+        <p>Please check that the product JSON files are uploaded correctly.</p>
+      </div>
+    `;
+  }
 }
 
-// ------------------------------
-// ADD TO CART BUTTON HANDLING
-// ------------------------------
+// ==================================================
+// CATALOGUE EVENT HANDLERS
+// ==================================================
 
 if (productContainer) {
   productContainer.addEventListener("click", event => {
-    const addButton = event.target.closest(
-      ".add-to-cart-button"
-    );
+    const loadMoreButton = event.target.closest(".load-more-button");
+
+    if (loadMoreButton) {
+      displayLimit += PRODUCTS_PER_PAGE;
+      renderProducts();
+      return;
+    }
+
+    const addButton = event.target.closest(".add-to-cart-button");
 
     if (!addButton) {
       return;
     }
 
-    event.preventDefault();
-    event.stopPropagation();
+    const product = productCache.get(
+      String(addButton.dataset.productId)
+    );
 
-    const index = Number(addButton.dataset.productIndex);
-
-    if (!Number.isInteger(index) || !allProducts[index]) {
-      return;
+    if (product) {
+      addToCart(product);
     }
-
-    addToCart(allProducts[index]);
   });
 }
 
-// ------------------------------
-// SEARCH PRODUCTS
-// ------------------------------
-
 if (searchInput) {
-  searchInput.addEventListener("input", renderProducts);
-}
+  let searchTimer;
 
-// ------------------------------
-// CATEGORY FILTER BUTTONS
-// ------------------------------
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+
+    displayLimit = PRODUCTS_PER_PAGE;
+
+    searchTimer = setTimeout(() => {
+      renderProducts();
+    }, 150);
+  });
+}
 
 if (categoryContainer) {
   categoryContainer.addEventListener("click", event => {
@@ -447,100 +587,86 @@ if (categoryContainer) {
     }
 
     selectedCategory = button.dataset.category || "All";
+    displayLimit = PRODUCTS_PER_PAGE;
 
-    document.querySelectorAll(".category").forEach(
-      categoryButton => {
-        const isActive = categoryButton === button;
+    document.querySelectorAll(".category").forEach(categoryButton => {
+      const active = categoryButton === button;
 
-        categoryButton.classList.toggle("active", isActive);
-
-        categoryButton.setAttribute(
-          "aria-pressed",
-          String(isActive)
-        );
-      }
-    );
+      categoryButton.classList.toggle("active", active);
+      categoryButton.setAttribute("aria-pressed", String(active));
+    });
 
     renderProducts();
   });
 }
 
-// ------------------------------
-// LOAD PRODUCT DATA
-// ------------------------------
+// ==================================================
+// LOAD SEARCH INDEX
+// ==================================================
 
 async function initialiseCatalogue() {
   if (!productContainer || !searchInput || !resultCount) {
-    console.error(
-      "Product catalogue could not start because required HTML elements are missing."
-    );
+    console.error("Required catalogue HTML elements are missing.");
     return;
   }
 
-  resultCount.textContent = "Loading products...";
-
   updateCartCount();
 
+  resultCount.textContent = "Loading product catalogue...";
+
   try {
-    const response = await fetch(CATALOGUE_FILE, {
+    const response = await fetch(SEARCH_INDEX_FILE, {
       cache: "no-store"
     });
 
     if (!response.ok) {
       throw new Error(
-        `Could not load products: HTTP ${response.status}`
+        `Unable to load the search index: HTTP ${response.status}`
       );
     }
 
-    const products = await response.json();
+    const data = await response.json();
 
-    if (!Array.isArray(products)) {
-      throw new Error(
-        "The product data must contain a JSON array."
-      );
+    if (!Array.isArray(data)) {
+      throw new Error("The search index must contain a JSON array.");
     }
 
-    allProducts = products.filter(product => {
-      return (
-        product &&
-        typeof product.id === "string" &&
-        typeof product.name === "string" &&
-        product.name.trim() !== ""
-      );
-    });
+    searchIndex = data.filter(product =>
+      product &&
+      typeof product.id === "string" &&
+      typeof product.name === "string" &&
+      typeof product.file === "string"
+    );
 
     console.log(
-      "EMS Auto Parts products loaded:",
-      allProducts.length
+      "EMS Auto Parts search index loaded:",
+      searchIndex.length,
+      "products"
     );
 
-    renderProducts();
+    await renderProducts();
+
   } catch (error) {
-    console.error(
-      "EMS Auto Parts product loading error:",
-      error
-    );
+    console.error("Catalogue initialisation error:", error);
 
     resultCount.textContent = "Unable to load products";
 
     productContainer.innerHTML = `
-      <div class="empty-state">
-        <h3>Unable to load products</h3>
-
+      <div class="no-results">
+        <h3>Unable to load the catalogue</h3>
         <p>${escapeHTML(error.message)}</p>
-
         <p>
-          Please try again later. If the problem continues,
-          check that the product catalogue JSON file exists.
+          Check that search_index_compact.json and the product files
+          are published alongside index.html.
         </p>
       </div>
     `;
   }
 }
 
-// ------------------------------
+// ==================================================
 // KEEP CART COUNT UPDATED
-// ------------------------------
+// ==================================================
 
 window.addEventListener("storage", event => {
   if (event.key === CART_STORAGE_KEY) {
@@ -548,8 +674,8 @@ window.addEventListener("storage", event => {
   }
 });
 
-// ------------------------------
-// START THE PRODUCT CATALOGUE
-// ------------------------------
+// ==================================================
+// START
+// ==================================================
 
 initialiseCatalogue();
