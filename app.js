@@ -2,8 +2,8 @@
 
 // ==================================================
 // EMS AUTO PARTS — PRODUCT CATALOGUE
-// Advanced search for 112,905+ products across split
-// JSON files, with a compact category dropdown.
+// Supports 112,905+ products across split JSON files.
+// Uses curated main categories and clean subcategories.
 // ==================================================
 
 const SEARCH_INDEX_FILE = "./search_index_compact.json";
@@ -151,13 +151,18 @@ function saveCart(cart) {
     return true;
   } catch (error) {
     console.error("Could not save shopping cart:", error);
-    alert("Unable to save your cart. Please check your browser storage.");
+
+    alert(
+      "Unable to save your cart. Please check your browser storage."
+    );
+
     return false;
   }
 }
 
 function updateCartCount() {
   const countElement = document.getElementById("cart-count");
+
   if (!countElement) return;
 
   const totalItems = getCart().reduce(
@@ -219,9 +224,11 @@ function addToCart(product) {
     });
   }
 
-  if (saveCart(cart)) {
+  if (saveCart(cart) && productContainer) {
     const button = productContainer.querySelector(
-      `.add-to-cart-button[data-product-id="${CSS.escape(String(product.id))}"]`
+      `.add-to-cart-button[data-product-id="${CSS.escape(
+        String(product.id)
+      )}"]`
     );
 
     if (button) {
@@ -239,24 +246,480 @@ function addToCart(product) {
 }
 
 // ==================================================
-// CATEGORY DATA
+// CLEAN CATEGORY SYSTEM
 // ==================================================
+
+// These are the main categories customers will see.
+// Products are assigned to one main category, then placed
+// into a smaller subcategory where suitable.
+
+const CATEGORY_RULES = [
+  {
+    name: "Air Conditioning & Heating",
+    terms: [
+      "air conditioning",
+      "air conditioner",
+      "air con",
+      "climate control",
+      "heater",
+      "heating",
+      "hvac",
+      "blower motor",
+      "cabin temperature",
+      "ventilation"
+    ]
+  },
+  {
+    name: "Braking & Suspension",
+    terms: [
+      "brake",
+      "braking",
+      "suspension",
+      "shock absorber",
+      "shock",
+      "strut",
+      "coil spring",
+      "control arm",
+      "ball joint",
+      "sway bar",
+      "swaybar",
+      "wheel bearing",
+      "brake pad",
+      "brake rotor",
+      "brake disc",
+      "caliper"
+    ]
+  },
+  {
+    name: "Engine & Performance",
+    terms: [
+      "engine",
+      "piston",
+      "cylinder head",
+      "camshaft",
+      "crankshaft",
+      "timing belt",
+      "timing chain",
+      "rocker cover",
+      "valve cover",
+      "engine mount",
+      "head gasket",
+      "gasket",
+      "turbo",
+      "supercharger",
+      "intercooler",
+      "performance",
+      "oil pump",
+      "engine component"
+    ]
+  },
+  {
+    name: "Cooling System",
+    terms: [
+      "radiator",
+      "cooling system",
+      "cooling fan",
+      "thermostat",
+      "water pump",
+      "coolant reservoir",
+      "overflow tank",
+      "expansion tank",
+      "radiator hose",
+      "coolant"
+    ]
+  },
+  {
+    name: "Electrical & Lighting",
+    terms: [
+      "electrical",
+      "battery",
+      "alternator",
+      "starter motor",
+      "starter",
+      "headlight",
+      "tail light",
+      "tail lamp",
+      "indicator",
+      "bulb",
+      "lighting",
+      "led light",
+      "fuse",
+      "relay",
+      "wiring",
+      "ignition coil",
+      "spark plug",
+      "electronic"
+    ]
+  },
+  {
+    name: "Exhaust & Emissions",
+    terms: [
+      "exhaust",
+      "muffler",
+      "catalytic converter",
+      "emission",
+      "egr valve",
+      "diesel particulate",
+      "dpf",
+      "exhaust pipe",
+      "extractor",
+      "tailpipe"
+    ]
+  },
+  {
+    name: "Fuel & Intake",
+    terms: [
+      "fuel system",
+      "fuel pump",
+      "fuel injector",
+      "fuel line",
+      "fuel filter",
+      "throttle body",
+      "air intake",
+      "intake manifold",
+      "induction",
+      "carburettor",
+      "carburetor",
+      "air filter",
+      "mass air flow"
+    ]
+  },
+  {
+    name: "Transmission & Drivetrain",
+    terms: [
+      "transmission",
+      "gearbox",
+      "gear box",
+      "clutch",
+      "drivetrain",
+      "drive shaft",
+      "driveshaft",
+      "cv joint",
+      "constant velocity",
+      "differential",
+      "axle",
+      "transfer case",
+      "flywheel",
+      "gear selector",
+      "gear linkage"
+    ]
+  },
+  {
+    name: "Steering",
+    terms: [
+      "steering",
+      "power steering",
+      "tie rod",
+      "rack end",
+      "steering rack",
+      "steering column"
+    ]
+  },
+  {
+    name: "Wheels & Tyres",
+    terms: [
+      "wheel",
+      "tyre",
+      "tire",
+      "rim",
+      "hubcap",
+      "wheel nut",
+      "wheel stud",
+      "wheel spacer",
+      "wheel lock"
+    ]
+  },
+  {
+    name: "Oils, Fluids & Filters",
+    terms: [
+      "engine oil",
+      "motor oil",
+      "gear oil",
+      "oil filter",
+      "oil additive",
+      "oil treatment",
+      "brake fluid",
+      "transmission fluid",
+      "power steering fluid",
+      "coolant",
+      "lubricant",
+      "additive",
+      "grease",
+      "fluid",
+      "filter",
+      "oil",
+      "flush"
+    ]
+  },
+  {
+    name: "Car Care & Cleaning",
+    terms: [
+      "car care",
+      "car wash",
+      "cleaner",
+      "cleaning",
+      "wash",
+      "wax",
+      "polish",
+      "detailing",
+      "shampoo",
+      "microfibre",
+      "microfiber",
+      "degreaser",
+      "paint care",
+      "glass cleaner",
+      "leather care",
+      "interior cleaner"
+    ]
+  },
+  {
+    name: "Tools & Equipment",
+    terms: [
+      "tool",
+      "equipment",
+      "socket",
+      "spanner",
+      "wrench",
+      "screwdriver",
+      "plier",
+      "pliers",
+      "jack",
+      "hoist",
+      "compressor",
+      "workshop",
+      "diagnostic tool",
+      "torque wrench",
+      "tool kit",
+      "toolbox"
+    ]
+  },
+  {
+    name: "Towing & Transport",
+    terms: [
+      "towing",
+      "towbar",
+      "tow bar",
+      "trailer",
+      "tie down",
+      "ratchet strap",
+      "roof rack",
+      "cargo carrier",
+      "bike rack",
+      "trailer plug",
+      "trailer light"
+    ]
+  },
+  {
+    name: "Camping & Touring",
+    terms: [
+      "camping",
+      "touring",
+      "awning",
+      "tent",
+      "camp stove",
+      "camping fridge",
+      "recovery gear",
+      "4wd",
+      "4x4",
+      "off road",
+      "off-road",
+      "snorkel",
+      "recovery track",
+      "recovery board"
+    ]
+  },
+  {
+    name: "Safety & Emergency",
+    terms: [
+      "first aid",
+      "fire extinguisher",
+      "warning triangle",
+      "reflective vest",
+      "jump starter",
+      "puncture repair",
+      "safety",
+      "emergency",
+      "roadside assistance",
+      "hi vis",
+      "high visibility"
+    ]
+  },
+  {
+    name: "Body & Exterior",
+    terms: [
+      "body panel",
+      "exterior",
+      "bumper",
+      "guard",
+      "body trim",
+      "mirror",
+      "windscreen",
+      "windshield",
+      "window",
+      "door handle",
+      "number plate",
+      "license plate",
+      "wiper",
+      "paint",
+      "body repair",
+      "mud flap",
+      "mudguard"
+    ]
+  },
+  {
+    name: "Interior & Comfort",
+    terms: [
+      "interior",
+      "seat cover",
+      "seat",
+      "floor mat",
+      "car mat",
+      "organiser",
+      "organizer",
+      "phone holder",
+      "cup holder",
+      "sunshade",
+      "interior trim",
+      "comfort",
+      "steering wheel cover",
+      "seat organiser",
+      "seat organizer"
+    ]
+  },
+  {
+    name: "Accessories",
+    terms: [
+      "accessory",
+      "accessories",
+      "phone",
+      "audio",
+      "stereo",
+      "speaker",
+      "charger",
+      "usb",
+      "mount",
+      "cover",
+      "storage",
+      "decoration",
+      "car accessory",
+      "car accessories"
+    ]
+  }
+];
+
+// Fallback category when a product cannot be classified.
+const DEFAULT_MAIN_CATEGORY = "Other Parts";
+
+// ==================================================
+// CATEGORY CLEANING AND CLASSIFICATION
+// ==================================================
+
+function normaliseCategoryText(value) {
+  return String(value || "")
+    .replace(/&amp;/gi, "&")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function normaliseCategoryPath(value) {
   return String(value || "")
     .split("/")
-    .map(part => part.trim())
-    .filter(Boolean)
+    .map(part => normaliseCategoryText(part))
+    .filter(part =>
+      part &&
+      !/^[a-z]$/i.test(part) &&
+      !/^\d+$/.test(part) &&
+      !/^(all|all products|other|general|miscellaneous|uncategorised|uncategorized|parts|products)$/i.test(part)
+    )
     .join("/");
 }
 
 function getCategoryParts(value) {
   const normalised = normaliseCategoryPath(value);
-
-  return normalised
-    ? normalised.split("/")
-    : ["Uncategorised"];
+  return normalised ? normalised.split("/") : [];
 }
+
+function findMainCategory(product) {
+  const category = String(product.category || "").toLowerCase();
+  const name = String(product.name || "").toLowerCase();
+  const brand = String(product.brand || "").toLowerCase();
+
+  const text = `${name} ${category} ${brand}`;
+
+  for (const rule of CATEGORY_RULES) {
+    if (rule.terms.some(term => text.includes(term))) {
+      return rule.name;
+    }
+  }
+
+  return DEFAULT_MAIN_CATEGORY;
+}
+
+function cleanSubcategoryName(value) {
+  let name = normaliseCategoryText(value);
+
+  name = name.replace(/^\s+|\s+$/g, "");
+
+  if (
+    !name ||
+    name.length < 2 ||
+    name.length > 65 ||
+    /^[a-z]$/i.test(name) ||
+    /^\d+$/.test(name)
+  ) {
+    return "";
+  }
+
+  if (/^(all|other|general|miscellaneous|uncategorised|uncategorized|parts|products|accessories)$/i.test(name)) {
+    return "";
+  }
+
+  // Remove category labels that add no useful information.
+  if (/^[A-Z0-9_-]{1,3}$/.test(name)) {
+    return "";
+  }
+
+  return name;
+}
+
+function getCategoryPath(product) {
+  const mainCategory = findMainCategory(product);
+  const originalParts = getCategoryParts(product.category);
+
+  // Use the existing catalogue taxonomy to provide useful subcategories,
+  // but never let it create new main categories.
+  const meaningfulParts = originalParts
+    .map(cleanSubcategoryName)
+    .filter(Boolean);
+
+  // Remove duplicate labels and generic labels.
+  const uniqueParts = [];
+
+  for (const part of meaningfulParts) {
+    const alreadyExists = uniqueParts.some(
+      existing => existing.toLowerCase() === part.toLowerCase()
+    );
+
+    if (!alreadyExists) {
+      uniqueParts.push(part);
+    }
+  }
+
+  // Avoid repeating the main category as a subcategory.
+  const relevantParts = uniqueParts.filter(
+    part => part.toLowerCase() !== mainCategory.toLowerCase()
+  );
+
+  // Keep only the most useful two levels below the main category.
+  const subcategories = relevantParts.slice(-2);
+
+  return [mainCategory, ...subcategories].join("/");
+}
+
+// ==================================================
+// BUILD CATEGORY TREE
+// ==================================================
 
 function buildCategoryTree() {
   const root = {
@@ -267,7 +730,7 @@ function buildCategoryTree() {
   };
 
   for (const product of searchIndex) {
-    const parts = getCategoryParts(product.category);
+    const parts = getCategoryPath(product).split("/");
 
     root.count++;
 
@@ -304,6 +767,7 @@ function injectCategoryStyles() {
   if (document.getElementById("ems-category-styles")) return;
 
   const style = document.createElement("style");
+
   style.id = "ems-category-styles";
 
   style.textContent = `
@@ -338,8 +802,7 @@ function injectCategoryStyles() {
     #categories .ems-category-dropdown-button:hover,
     #categories .ems-category-dropdown-button:focus-visible {
       border-color: #ff6a00;
-      outline: 2px solid rgba(255, 106, 0, 0.35);
-      outline-offset: 2px;
+      outline: none;
     }
 
     #categories .ems-category-chevron {
@@ -371,7 +834,7 @@ function injectCategoryStyles() {
     }
 
     #categories .ems-category-menu[hidden] {
-      display: none !important;
+      display: none;
     }
 
     #categories .ems-category-list {
@@ -477,7 +940,7 @@ function injectCategoryStyles() {
 }
 
 // ==================================================
-// RENDER CATEGORY TREE
+// RENDER CATEGORY ITEMS
 // ==================================================
 
 function renderCategoryNode(node) {
@@ -485,8 +948,9 @@ function renderCategoryNode(node) {
   const expanded = expandedCategories.has(node.path);
   const active = selectedCategory === node.path;
 
-  const childNodes = [...node.children.values()]
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const childNodes = [...node.children.values()].sort(
+    (a, b) => a.name.localeCompare(b.name)
+  );
 
   const childrenHTML = hasChildren && expanded
     ? `
@@ -540,8 +1004,9 @@ function renderCategories() {
 
   const tree = buildCategoryTree();
 
-  const rootCategories = [...tree.children.values()]
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const rootCategories = [...tree.children.values()].sort(
+    (a, b) => a.name.localeCompare(b.name)
+  );
 
   const selectedLabel = selectedCategory === "All"
     ? "All Products"
@@ -608,7 +1073,7 @@ function closeCategoryMenu() {
 function matchesCategory(product) {
   if (selectedCategory === "All") return true;
 
-  const productCategory = normaliseCategoryPath(product.category);
+  const productCategory = getCategoryPath(product);
   const selectedPath = normaliseCategoryPath(selectedCategory);
 
   return (
@@ -618,12 +1083,14 @@ function matchesCategory(product) {
 }
 
 // ==================================================
-// LOAD INDIVIDUAL PRODUCT FILES
+// LOAD PRODUCT JSON FILES ON DEMAND
 // ==================================================
 
 async function loadProductFile(filename) {
   if (!filename || typeof filename !== "string") {
-    throw new Error("A product file is missing from the search index.");
+    throw new Error(
+      "A product file is missing from the search index."
+    );
   }
 
   if (productFileCache.has(filename)) {
@@ -631,9 +1098,10 @@ async function loadProductFile(filename) {
   }
 
   const request = (async () => {
-    const response = await fetch(`./${encodeURIComponent(filename)}`, {
-      cache: "force-cache"
-    });
+    const response = await fetch(
+      `./${encodeURIComponent(filename)}`,
+      { cache: "force-cache" }
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -644,7 +1112,9 @@ async function loadProductFile(filename) {
     const products = await response.json();
 
     if (!Array.isArray(products)) {
-      throw new Error(`${filename} does not contain a product array.`);
+      throw new Error(
+        `${filename} does not contain a product array.`
+      );
     }
 
     for (const product of products) {
@@ -679,7 +1149,7 @@ async function loadProductsForEntries(entries) {
 }
 
 // ==================================================
-// ADVANCED SEARCH AND RELEVANCE
+// SEARCH
 // ==================================================
 
 function getSearchText(product) {
@@ -718,6 +1188,7 @@ function scoreSearchResult(product, query) {
   const brand = String(product.brand || "").toLowerCase();
   const sku = String(product.sku || "").toLowerCase();
   const id = String(product.id || "").toLowerCase();
+
   const normalisedQuery = query.trim().toLowerCase();
 
   if (sku && sku === normalisedQuery) return 1000;
@@ -735,8 +1206,6 @@ function scoreSearchResult(product, query) {
 
 function findMatchingEntries() {
   const query = searchInput.value.trim().toLowerCase();
-
-  // Correct whitespace splitting allows multi-word searches.
   const queryTerms = query.split(/\s+/).filter(Boolean);
 
   const brandQuery = brandFilter.trim().toLowerCase();
@@ -745,16 +1214,22 @@ function findMatchingEntries() {
   const matches = searchIndex.filter(product => {
     const scopedText = getSearchFieldText(product, searchScope);
 
-    const matchesQuery = queryTerms.every(term =>
-      scopedText.includes(term)
+    const matchesQuery = queryTerms.every(
+      term => scopedText.includes(term)
     );
 
     const matchesBrand = !brandQuery ||
-      String(product.brand || "").toLowerCase().includes(brandQuery);
+      String(product.brand || "")
+        .toLowerCase()
+        .includes(brandQuery);
 
     const matchesSKU = !skuQuery ||
-      String(product.sku || "").toLowerCase().includes(skuQuery) ||
-      String(product.id || "").toLowerCase().includes(skuQuery);
+      String(product.sku || "")
+        .toLowerCase()
+        .includes(skuQuery) ||
+      String(product.id || "")
+        .toLowerCase()
+        .includes(skuQuery);
 
     return (
       matchesQuery &&
@@ -775,7 +1250,8 @@ function findMatchingEntries() {
     );
   } else if (query) {
     matches.sort((a, b) =>
-      scoreSearchResult(b, query) - scoreSearchResult(a, query) ||
+      scoreSearchResult(b, query) -
+        scoreSearchResult(a, query) ||
       String(a.name || "").localeCompare(String(b.name || ""))
     );
   }
@@ -784,7 +1260,7 @@ function findMatchingEntries() {
 }
 
 // ==================================================
-// ADVANCED SEARCH INTERFACE
+// ADVANCED SEARCH
 // ==================================================
 
 function injectAdvancedSearch() {
@@ -796,6 +1272,7 @@ function injectAdvancedSearch() {
   }
 
   const style = document.createElement("style");
+
   style.id = "ems-advanced-search-styles";
 
   style.textContent = `
@@ -817,10 +1294,6 @@ function injectAdvancedSearch() {
       cursor: pointer;
     }
 
-    #ems-advanced-search .ems-advanced-toggle:hover {
-      color: #ff9a52;
-    }
-
     #ems-advanced-search .ems-advanced-panel {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -834,7 +1307,7 @@ function injectAdvancedSearch() {
     }
 
     #ems-advanced-search .ems-advanced-panel[hidden] {
-      display: none !important;
+      display: none;
     }
 
     #ems-advanced-search label {
@@ -883,11 +1356,8 @@ function injectAdvancedSearch() {
       cursor: pointer;
     }
 
-    #ems-advanced-search .ems-advanced-actions button:hover {
-      filter: brightness(1.08);
-    }
-
-    #ems-advanced-search .ems-advanced-actions .ems-reset-search {
+    #ems-advanced-search .ems-advanced-actions
+    .ems-reset-search {
       background: transparent;
       color: #fff;
     }
@@ -906,6 +1376,7 @@ function injectAdvancedSearch() {
   document.head.appendChild(style);
 
   const wrapper = document.createElement("section");
+
   wrapper.id = "ems-advanced-search";
 
   wrapper.innerHTML = `
@@ -998,12 +1469,24 @@ function injectAdvancedSearch() {
   wrapper
     .querySelector("#ems-apply-advanced")
     .addEventListener("click", () => {
-      searchScope = wrapper.querySelector("#ems-search-scope").value;
-      brandFilter = wrapper.querySelector("#ems-brand-filter").value;
-      skuFilter = wrapper.querySelector("#ems-sku-filter").value;
-      sortMode = wrapper.querySelector("#ems-sort-mode").value;
+      searchScope = wrapper.querySelector(
+        "#ems-search-scope"
+      ).value;
+
+      brandFilter = wrapper.querySelector(
+        "#ems-brand-filter"
+      ).value;
+
+      skuFilter = wrapper.querySelector(
+        "#ems-sku-filter"
+      ).value;
+
+      sortMode = wrapper.querySelector(
+        "#ems-sort-mode"
+      ).value;
 
       displayLimit = PRODUCTS_PER_PAGE;
+
       renderProducts();
     });
 
@@ -1021,6 +1504,7 @@ function injectAdvancedSearch() {
       brandFilter = "";
       skuFilter = "";
       sortMode = "relevance";
+
       selectedCategory = "All";
       displayLimit = PRODUCTS_PER_PAGE;
 
@@ -1044,39 +1528,60 @@ function createProductCard(product) {
 
   const discountedPrice = getEMSPrice(product.price);
 
-  const price = escapeHTML(formatPrice(
-    discountedPrice,
-    product.currency || "AUD"
-  ));
+  const price = escapeHTML(
+    formatPrice(
+      discountedPrice,
+      product.currency || "AUD"
+    )
+  );
 
   const imageURL = getProductImage(product);
 
   const imageHTML = imageURL
-    ? `<img src="${escapeHTML(imageURL)}" alt="${name}" loading="lazy" decoding="async">`
+    ? `
+      <img
+        src="${escapeHTML(imageURL)}"
+        alt="${name}"
+        loading="lazy"
+        decoding="async"
+      >
+    `
     : `<span>Image unavailable</span>`;
 
   return `
     <article class="product-card">
-      <div class="product-image">${imageHTML}</div>
+      <div class="product-image">
+        ${imageHTML}
+      </div>
 
       <div class="product-info">
         <span class="product-category">${category}</span>
+
         <h3>${name}</h3>
+
         <p class="product-brand">${brand}</p>
+
         <p class="product-price">${price}</p>
+
         <p class="price-label">EMS Auto Parts</p>
 
         <a
           class="compare-button details-button"
-          href="./product.html?id=${encodeURIComponent(String(product.id))}"
-        >View product details</a>
+          href="./product.html?id=${encodeURIComponent(
+            String(product.id)
+          )}"
+        >
+          View product details
+        </a>
 
         <button
           type="button"
           class="compare-button add-to-cart-button"
           data-product-id="${escapeHTML(String(product.id))}"
           ${discountedPrice === null ? "disabled" : ""}
-        >Add to Cart</button>
+        >
+          Add to Cart
+        </button>
       </div>
     </article>
   `;
@@ -1087,13 +1592,19 @@ function createProductCard(product) {
 // ==================================================
 
 async function renderProducts() {
-  if (!productContainer || !searchInput || !resultCount) return;
+  if (!productContainer || !searchInput || !resultCount) {
+    return;
+  }
 
   const currentVersion = ++renderVersion;
-  const matchingEntries = findMatchingEntries();
 
+  const matchingEntries = findMatchingEntries();
   const totalMatches = matchingEntries.length;
-  const visibleEntries = matchingEntries.slice(0, displayLimit);
+
+  const visibleEntries = matchingEntries.slice(
+    0,
+    displayLimit
+  );
 
   resultCount.textContent = "Loading products...";
 
@@ -1103,7 +1614,7 @@ async function renderProducts() {
     productContainer.innerHTML = `
       <div class="no-results">
         <h3>No products found</h3>
-        <p>Try another search, adjust your filters or select All Products.</p>
+        <p>Try another search or select All Products.</p>
       </div>
     `;
 
@@ -1117,26 +1628,40 @@ async function renderProducts() {
   `;
 
   try {
-    const products = await loadProductsForEntries(visibleEntries);
+    const products = await loadProductsForEntries(
+      visibleEntries
+    );
 
     if (currentVersion !== renderVersion) return;
 
     resultCount.textContent =
       `Showing ${products.length} of ${totalMatches.toLocaleString()} products`;
 
-    const cardsHTML = products.map(createProductCard).join("");
+    const cardsHTML = products
+      .map(createProductCard)
+      .join("");
 
     const loadMoreHTML = totalMatches > displayLimit
       ? `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 20px;">
-          <button type="button" class="compare-button load-more-button">
+        <div
+          style="
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+          "
+        >
+          <button
+            type="button"
+            class="compare-button load-more-button"
+          >
             Load More Products
           </button>
         </div>
       `
       : "";
 
-    productContainer.innerHTML = cardsHTML + loadMoreHTML;
+    productContainer.innerHTML =
+      cardsHTML + loadMoreHTML;
   } catch (error) {
     if (currentVersion !== renderVersion) return;
 
@@ -1155,12 +1680,14 @@ async function renderProducts() {
 }
 
 // ==================================================
-// PRODUCT GRID EVENTS
+// CATALOGUE EVENT HANDLERS
 // ==================================================
 
 if (productContainer) {
   productContainer.addEventListener("click", event => {
-    const loadMoreButton = event.target.closest(".load-more-button");
+    const loadMoreButton = event.target.closest(
+      ".load-more-button"
+    );
 
     if (loadMoreButton) {
       displayLimit += PRODUCTS_PER_PAGE;
@@ -1168,7 +1695,9 @@ if (productContainer) {
       return;
     }
 
-    const addButton = event.target.closest(".add-to-cart-button");
+    const addButton = event.target.closest(
+      ".add-to-cart-button"
+    );
 
     if (!addButton) return;
 
@@ -1176,13 +1705,11 @@ if (productContainer) {
       String(addButton.dataset.productId)
     );
 
-    if (product) addToCart(product);
+    if (product) {
+      addToCart(product);
+    }
   });
 }
-
-// ==================================================
-// LIVE SEARCH
-// ==================================================
 
 if (searchInput) {
   let searchTimer;
@@ -1192,12 +1719,15 @@ if (searchInput) {
 
     displayLimit = PRODUCTS_PER_PAGE;
 
-    searchTimer = setTimeout(renderProducts, 150);
+    searchTimer = setTimeout(
+      renderProducts,
+      150
+    );
   });
 }
 
 // ==================================================
-// CATEGORY DROPDOWN EVENTS — FIXED
+// CATEGORY DROPDOWN EVENTS
 // ==================================================
 
 if (categoryContainer) {
@@ -1212,38 +1742,34 @@ if (categoryContainer) {
       const currentlyOpen =
         categoryContainer.dataset.open === "true";
 
-      categoryContainer.dataset.open = currentlyOpen
-        ? "false"
-        : "true";
+      categoryContainer.dataset.open =
+        currentlyOpen ? "false" : "true";
 
       renderCategories();
 
-      document.removeEventListener(
-        "click",
-        handleOutsideCategoryClick
-      );
-
-      document.removeEventListener(
-        "keydown",
-        handleCategoryEscape
-      );
-
       if (!currentlyOpen) {
-        // Delay registration so the click that opens the menu
-        // cannot immediately close it during the same event.
+        // Register after the opening click has completed.
         setTimeout(() => {
-          if (categoryContainer.dataset.open === "true") {
-            document.addEventListener(
-              "click",
-              handleOutsideCategoryClick
-            );
+          document.addEventListener(
+            "click",
+            handleOutsideCategoryClick
+          );
 
-            document.addEventListener(
-              "keydown",
-              handleCategoryEscape
-            );
-          }
+          document.addEventListener(
+            "keydown",
+            handleCategoryEscape
+          );
         }, 0);
+      } else {
+        document.removeEventListener(
+          "click",
+          handleOutsideCategoryClick
+        );
+
+        document.removeEventListener(
+          "keydown",
+          handleCategoryEscape
+        );
       }
 
       return;
@@ -1262,18 +1788,20 @@ if (categoryContainer) {
         expandedCategories.add(path);
       }
 
-      // Keep the dropdown open when expanding or collapsing a branch.
       categoryContainer.dataset.open = "true";
       renderCategories();
-
       return;
     }
 
-    const categoryButton = event.target.closest(".category");
+    const categoryButton = event.target.closest(
+      ".category"
+    );
 
     if (!categoryButton) return;
 
-    selectedCategory = categoryButton.dataset.category || "All";
+    selectedCategory =
+      categoryButton.dataset.category || "All";
+
     displayLimit = PRODUCTS_PER_PAGE;
 
     categoryContainer.dataset.open = "false";
@@ -1294,8 +1822,10 @@ if (categoryContainer) {
 }
 
 function handleOutsideCategoryClick(event) {
-  // Ignore the old click target if re-rendering detached it.
-  if (!event.target || !event.target.isConnected) return;
+  // Ignore clicks on detached elements after a menu rerender.
+  if (!event.target || !event.target.isConnected) {
+    return;
+  }
 
   if (
     categoryContainer &&
@@ -1343,19 +1873,24 @@ function handleCategoryEscape(event) {
 
 async function initialiseCatalogue() {
   if (!productContainer || !searchInput || !resultCount) {
-    console.error("Required catalogue HTML elements are missing.");
+    console.error(
+      "Required catalogue HTML elements are missing."
+    );
+
     return;
   }
 
   updateCartCount();
   injectAdvancedSearch();
 
-  resultCount.textContent = "Loading product catalogue...";
+  resultCount.textContent =
+    "Loading product catalogue...";
 
   try {
-    const response = await fetch(SEARCH_INDEX_FILE, {
-      cache: "no-store"
-    });
+    const response = await fetch(
+      SEARCH_INDEX_FILE,
+      { cache: "no-store" }
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -1366,7 +1901,9 @@ async function initialiseCatalogue() {
     const data = await response.json();
 
     if (!Array.isArray(data)) {
-      throw new Error("The search index must contain a JSON array.");
+      throw new Error(
+        "The search index must contain a JSON array."
+      );
     }
 
     searchIndex = data.filter(product =>
@@ -1383,11 +1920,16 @@ async function initialiseCatalogue() {
     );
 
     renderCategories();
+
     await renderProducts();
   } catch (error) {
-    console.error("Catalogue initialisation error:", error);
+    console.error(
+      "Catalogue initialisation error:",
+      error
+    );
 
-    resultCount.textContent = "Unable to load products";
+    resultCount.textContent =
+      "Unable to load products";
 
     productContainer.innerHTML = `
       <div class="no-results">
