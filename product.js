@@ -1,15 +1,22 @@
 "use strict";
 
+// ==================================================
+// EMS AUTO PARTS — PRODUCT DETAILS PAGE
+// Loads product data from the split JSON catalogue.
+// Applies an 80% discount (customer pays 20%).
+// ==================================================
+
 const SEARCH_INDEX_FILE = "./search_index_compact.json";
-const DISCOUNT_MULTIPLIER = 0.25;
-const DISCOUNT_PERCENTAGE = 75;
+
+const DISCOUNT_MULTIPLIER = 0.20;
+const DISCOUNT_PERCENTAGE = 80;
 
 const productDetail = document.getElementById("product-detail");
 const productFileCache = new Map();
 
-/* =========================
-   GENERAL HELPERS
-========================= */
+// ==================================================
+// GENERAL HELPERS
+// ==================================================
 
 function escapeHTML(value = "") {
     return String(value).replace(/[&<>"']/g, character => {
@@ -25,23 +32,6 @@ function escapeHTML(value = "") {
     });
 }
 
-function formatPrice(price, currency = "AUD") {
-    const numericPrice = Number(price);
-
-    if (!Number.isFinite(numericPrice)) {
-        return "Price unavailable";
-    }
-
-    try {
-        return new Intl.NumberFormat("en-AU", {
-            style: "currency",
-            currency: currency || "AUD"
-        }).format(numericPrice);
-    } catch {
-        return `$${numericPrice.toFixed(2)}`;
-    }
-}
-
 function isValidPrice(price) {
     return (
         price !== null &&
@@ -52,17 +42,67 @@ function isValidPrice(price) {
     );
 }
 
+function formatPrice(price, currency = "AUD") {
+    if (!isValidPrice(price)) {
+        return "Price unavailable";
+    }
+
+    try {
+        return new Intl.NumberFormat("en-AU", {
+            style: "currency",
+            currency: currency || "AUD"
+        }).format(Number(price));
+    } catch {
+        return `$${Number(price).toFixed(2)}`;
+    }
+}
+
+function getEMSPrice(originalPrice) {
+    if (!isValidPrice(originalPrice)) {
+        return null;
+    }
+
+    // Round to the nearest cent.
+    return Math.round(
+        (Number(originalPrice) * DISCOUNT_MULTIPLIER + Number.EPSILON) * 100
+    ) / 100;
+}
+
+function getSavings(originalPrice, discountedPrice) {
+    if (
+        !isValidPrice(originalPrice) ||
+        !isValidPrice(discountedPrice)
+    ) {
+        return null;
+    }
+
+    return Math.round(
+        (
+            Number(originalPrice) -
+            Number(discountedPrice) +
+            Number.EPSILON
+        ) * 100
+    ) / 100;
+}
+
 function getProductImage(product) {
-    const image = product.image || product.imageUrl || product.image_url || "";
+    const image =
+        product.image ||
+        product.imageUrl ||
+        product.image_url ||
+        "";
 
     if (typeof image !== "string" || !image.trim()) {
         return "";
     }
 
     try {
-        const parsedURL = new URL(image);
+        const parsedURL = new URL(image, window.location.href);
 
-        if (parsedURL.protocol !== "https:") {
+        if (
+            parsedURL.protocol !== "https:" &&
+            parsedURL.origin !== window.location.origin
+        ) {
             return "";
         }
 
@@ -76,9 +116,9 @@ function getProductCurrency(product) {
     return product.currency || "AUD";
 }
 
-/* =========================
-   LOAD PRODUCT DATA
-========================= */
+// ==================================================
+// LOAD PRODUCT DATA
+// ==================================================
 
 async function loadSearchIndex() {
     const response = await fetch(SEARCH_INDEX_FILE, {
@@ -94,7 +134,9 @@ async function loadSearchIndex() {
     const data = await response.json();
 
     if (!Array.isArray(data)) {
-        throw new Error("The product search index has an invalid format.");
+        throw new Error(
+            "The product search index has an invalid format."
+        );
     }
 
     return data;
@@ -102,7 +144,9 @@ async function loadSearchIndex() {
 
 async function loadProductFile(filename) {
     if (!filename || typeof filename !== "string") {
-        throw new Error("The product data file could not be identified.");
+        throw new Error(
+            "The product data file could not be identified."
+        );
     }
 
     if (productFileCache.has(filename)) {
@@ -117,12 +161,17 @@ async function loadProductFile(filename) {
             safeFilename.includes("/") ||
             safeFilename.includes("\\")
         ) {
-            throw new Error("The product data file name is invalid.");
+            throw new Error(
+                "The product data file name is invalid."
+            );
         }
 
-        const response = await fetch(`./${safeFilename}`, {
-            cache: "force-cache"
-        });
+        const response = await fetch(
+            `./${encodeURIComponent(safeFilename)}`,
+            {
+                cache: "force-cache"
+            }
+        );
 
         if (!response.ok) {
             throw new Error(
@@ -133,7 +182,9 @@ async function loadProductFile(filename) {
         const data = await response.json();
 
         if (!Array.isArray(data)) {
-            throw new Error("The product data file has an invalid format.");
+            throw new Error(
+                "The product data file has an invalid format."
+            );
         }
 
         return data;
@@ -153,6 +204,7 @@ async function findProduct(productId) {
     const searchIndex = await loadSearchIndex();
 
     const indexEntry = searchIndex.find(entry =>
+        entry &&
         String(entry.id) === String(productId)
     );
 
@@ -161,12 +213,15 @@ async function findProduct(productId) {
     }
 
     if (!indexEntry.file) {
-        throw new Error("The product data file is missing from the index.");
+        throw new Error(
+            "The product data file is missing from the index."
+        );
     }
 
     const products = await loadProductFile(indexEntry.file);
 
     const product = products.find(item =>
+        item &&
         String(item.id) === String(productId)
     );
 
@@ -174,15 +229,16 @@ async function findProduct(productId) {
         return null;
     }
 
+    // Product JSON takes precedence over index metadata.
     return {
         ...indexEntry,
         ...product
     };
 }
 
-/* =========================
-   PRODUCT INFORMATION
-========================= */
+// ==================================================
+// PRODUCT DESCRIPTION
+// ==================================================
 
 function getProductDescription(product) {
     const possibleFields = [
@@ -207,6 +263,10 @@ function getProductDescription(product) {
     return "";
 }
 
+// ==================================================
+// PRODUCT SPECIFICATIONS
+// ==================================================
+
 function getProductSpecifications(product) {
     const possibleSpecifications = [
         ["Brand", ["brand"]],
@@ -221,7 +281,10 @@ function getProductSpecifications(product) {
         ["Size", ["size"]],
         ["Weight", ["weight"]],
         ["Dimensions", ["dimensions"]],
-        ["Vehicle compatibility", ["vehicleCompatibility", "vehicle_compatibility", "fitment"]]
+        [
+            "Vehicle compatibility",
+            ["vehicleCompatibility", "vehicle_compatibility", "fitment"]
+        ]
     ];
 
     const specifications = [];
@@ -240,22 +303,36 @@ function getProductSpecifications(product) {
             }
         }
 
-        if (value !== "") {
-            if (Array.isArray(value)) {
-                value = value.join(", ");
-            } else if (typeof value === "object") {
-                value = JSON.stringify(value);
-            }
-
-            specifications.push({
-                label,
-                value: String(value)
-            });
+        if (value === "") {
+            continue;
         }
+
+        if (Array.isArray(value)) {
+            value = value
+                .map(item => {
+                    if (item && typeof item === "object") {
+                        return JSON.stringify(item);
+                    }
+
+                    return String(item);
+                })
+                .join(", ");
+        } else if (typeof value === "object") {
+            value = JSON.stringify(value);
+        }
+
+        specifications.push({
+            label,
+            value: String(value)
+        });
     }
 
     return specifications;
 }
+
+// ==================================================
+// PRODUCT FEATURES
+// ==================================================
 
 function getProductFeatures(product) {
     const possibleFields = [
@@ -271,7 +348,18 @@ function getProductFeatures(product) {
 
         if (Array.isArray(value)) {
             const features = value
-                .map(item => String(item).trim())
+                .map(item => {
+                    if (item && typeof item === "object") {
+                        return String(
+                            item.text ||
+                            item.name ||
+                            item.description ||
+                            ""
+                        ).trim();
+                    }
+
+                    return String(item).trim();
+                })
                 .filter(Boolean);
 
             if (features.length) {
@@ -293,6 +381,10 @@ function getProductFeatures(product) {
 
     return [];
 }
+
+// ==================================================
+// LAST CHECKED DATE
+// ==================================================
 
 function formatLastChecked(product) {
     const value =
@@ -318,9 +410,9 @@ function formatLastChecked(product) {
     });
 }
 
-/* =========================
-   PAGE STYLING
-========================= */
+// ==================================================
+// PAGE STYLING
+// ==================================================
 
 function addProductPageStyles() {
     if (document.getElementById("ems-product-page-styles")) {
@@ -341,7 +433,9 @@ function addProductPageStyles() {
 
         .detail-panel {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+            grid-template-columns:
+                minmax(0, 1fr)
+                minmax(0, 1.1fr);
             gap: 35px;
             align-items: start;
             background: #151515;
@@ -354,6 +448,7 @@ function addProductPageStyles() {
             display: flex;
             align-items: center;
             justify-content: center;
+            min-width: 0;
             min-height: 350px;
             padding: 20px;
             background: #fff;
@@ -372,6 +467,10 @@ function addProductPageStyles() {
             color: #777;
             text-align: center;
             font-size: 15px;
+        }
+
+        .detail-information {
+            min-width: 0;
         }
 
         .detail-brand {
@@ -395,7 +494,10 @@ function addProductPageStyles() {
             margin: 0 0 22px;
             color: #bdbdbd;
             font-size: 14px;
+            overflow-wrap: anywhere;
         }
+
+        /* Discount price panel */
 
         .detail-price-box {
             margin: 22px 0;
@@ -450,6 +552,7 @@ function addProductPageStyles() {
             font-size: clamp(30px, 4vw, 42px);
             font-weight: 900;
             line-height: 1.15;
+            overflow-wrap: anywhere;
         }
 
         .detail-savings {
@@ -465,6 +568,8 @@ function addProductPageStyles() {
             font-size: 24px;
             font-weight: 800;
         }
+
+        /* Description, features and specifications */
 
         .detail-section {
             margin-top: 30px;
@@ -525,6 +630,8 @@ function addProductPageStyles() {
             color: #f5f5f5;
         }
 
+        /* Navigation */
+
         .detail-back-button {
             display: inline-flex;
             align-items: center;
@@ -538,7 +645,9 @@ function addProductPageStyles() {
             font-size: 14px;
             font-weight: 800;
             text-decoration: none;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition:
+                background 0.2s ease,
+                transform 0.2s ease;
         }
 
         .detail-back-button:hover {
@@ -552,6 +661,8 @@ function addProductPageStyles() {
             color: #858585;
             font-size: 12px;
         }
+
+        /* Loading and error states */
 
         .detail-error {
             max-width: 750px;
@@ -593,15 +704,19 @@ function addProductPageStyles() {
             .detail-price-box {
                 padding: 16px;
             }
+
+            .detail-specifications th {
+                width: 42%;
+            }
         }
     `;
 
     document.head.appendChild(style);
 }
 
-/* =========================
-   ERROR DISPLAY
-========================= */
+// ==================================================
+// ERROR DISPLAY
+// ==================================================
 
 function showError(title, message) {
     if (!productDetail) {
@@ -611,7 +726,9 @@ function showError(title, message) {
     productDetail.innerHTML = `
         <div class="detail-error">
             <h1>${escapeHTML(title)}</h1>
+
             <p>${escapeHTML(message)}</p>
+
             <a class="detail-back-button" href="./index.html">
                 Back to catalogue
             </a>
@@ -619,9 +736,9 @@ function showError(title, message) {
     `;
 }
 
-/* =========================
-   PRICE DISPLAY
-========================= */
+// ==================================================
+// PRICE DISPLAY
+// ==================================================
 
 function renderPrice(product) {
     const currency = getProductCurrency(product);
@@ -629,26 +746,36 @@ function renderPrice(product) {
     if (!isValidPrice(product.price)) {
         return `
             <div class="detail-price-box">
-                <div class="detail-price-label">EMS Auto Parts price</div>
-                <p class="detail-price-unavailable">Price unavailable</p>
+                <div class="detail-price-label">
+                    EMS Auto Parts price
+                </div>
+
+                <p class="detail-price-unavailable">
+                    Price unavailable
+                </p>
+
                 <p class="detail-savings">
-                    The price for this product has not been confirmed.
+                    A price is not currently available for this product.
                 </p>
             </div>
         `;
     }
 
     const originalPrice = Number(product.price);
-    const discountedPrice = originalPrice * DISCOUNT_MULTIPLIER;
-    const savings = originalPrice - discountedPrice;
+    const discountedPrice = getEMSPrice(originalPrice);
+    const savings = getSavings(originalPrice, discountedPrice);
 
     return `
         <div class="detail-price-box">
-            <div class="detail-price-label">Special promotion</div>
+            <div class="detail-price-label">
+                EMS Auto Parts price
+            </div>
 
             <div class="detail-original-price-row">
                 <span class="detail-original-price">
-                    ${escapeHTML(formatPrice(originalPrice, currency))}
+                    ${escapeHTML(
+                        formatPrice(originalPrice, currency)
+                    )}
                 </span>
 
                 <span class="detail-promotion-badge">
@@ -657,24 +784,34 @@ function renderPrice(product) {
             </div>
 
             <p class="detail-discounted-price">
-                ${escapeHTML(formatPrice(discountedPrice, currency))}
+                ${escapeHTML(
+                    formatPrice(discountedPrice, currency)
+                )}
             </p>
 
             <p class="detail-savings">
-                You save ${escapeHTML(formatPrice(savings, currency))}
+                You save ${escapeHTML(
+                    formatPrice(savings, currency)
+                )}
             </p>
         </div>
     `;
 }
 
-/* =========================
-   RENDER PRODUCT PAGE
-========================= */
+// ==================================================
+// RENDER PRODUCT DETAILS
+// ==================================================
 
 function renderProduct(product) {
     const name = product.name || "Product details";
     const brand = product.brand || "";
-    const sku = product.sku || product.productCode || product.product_code || "";
+
+    const sku =
+        product.sku ||
+        product.productCode ||
+        product.product_code ||
+        "";
+
     const image = getProductImage(product);
     const description = getProductDescription(product);
     const features = getProductFeatures(product);
@@ -688,6 +825,7 @@ function renderProduct(product) {
                 src="${escapeHTML(image)}"
                 alt="${escapeHTML(name)}"
                 loading="eager"
+                decoding="async"
             >
         `
         : `
@@ -700,9 +838,10 @@ function renderProduct(product) {
         ? `
             <section class="detail-section">
                 <h2>Product Description</h2>
-                <div class="detail-description">
-                    ${escapeHTML(description)}
-                </div>
+
+                <div class="detail-description">${escapeHTML(
+                    description
+                )}</div>
             </section>
         `
         : "";
@@ -711,6 +850,7 @@ function renderProduct(product) {
         ? `
             <section class="detail-section">
                 <h2>Features & Benefits</h2>
+
                 <ul class="detail-features">
                     ${features.map(feature => `
                         <li>${escapeHTML(feature)}</li>
@@ -724,12 +864,18 @@ function renderProduct(product) {
         ? `
             <section class="detail-section">
                 <h2>Specifications</h2>
+
                 <table class="detail-specifications">
                     <tbody>
                         ${specifications.map(specification => `
                             <tr>
-                                <th>${escapeHTML(specification.label)}</th>
-                                <td>${escapeHTML(specification.value)}</td>
+                                <th scope="row">
+                                    ${escapeHTML(specification.label)}
+                                </th>
+
+                                <td>
+                                    ${escapeHTML(specification.value)}
+                                </td>
                             </tr>
                         `).join("")}
                     </tbody>
@@ -756,10 +902,14 @@ function renderProduct(product) {
 
                 <div class="detail-information">
                     ${brand ? `
-                        <p class="detail-brand">${escapeHTML(brand)}</p>
+                        <p class="detail-brand">
+                            ${escapeHTML(brand)}
+                        </p>
                     ` : ""}
 
-                    <h1 class="detail-title">${escapeHTML(name)}</h1>
+                    <h1 class="detail-title">
+                        ${escapeHTML(name)}
+                    </h1>
 
                     ${sku ? `
                         <p class="detail-sku">
@@ -783,6 +933,7 @@ function renderProduct(product) {
         </main>
     `;
 
+    // Handle broken or unavailable images.
     const productImage = productDetail.querySelector(".detail-image");
 
     if (productImage) {
@@ -799,8 +950,10 @@ function renderProduct(product) {
         }, { once: true });
     }
 
+    // Update browser tab title.
     document.title = `${name} | EMS Auto Parts`;
 
+    // Update page description for search engines and previews.
     let metaDescription = document.querySelector(
         'meta[name="description"]'
     );
@@ -812,22 +965,28 @@ function renderProduct(product) {
     }
 
     metaDescription.content = description
-        ? description.slice(0, 155)
+        ? description.replace(/\s+/g, " ").slice(0, 155)
         : `${name} product details at EMS Auto Parts.`;
 }
 
-/* =========================
-   INITIALISE PAGE
-========================= */
+// ==================================================
+// INITIALISE PRODUCT PAGE
+// ==================================================
 
 async function initialiseProductPage() {
     if (!productDetail) {
+        console.error(
+            'The product details container "#product-detail" was not found.'
+        );
         return;
     }
 
     addProductPageStyles();
 
-    const parameters = new URLSearchParams(window.location.search);
+    const parameters = new URLSearchParams(
+        window.location.search
+    );
+
     const productId = parameters.get("id");
 
     if (!productId) {
@@ -835,6 +994,7 @@ async function initialiseProductPage() {
             "Product not selected",
             "Return to the catalogue and select a product to view its details."
         );
+
         return;
     }
 
@@ -853,18 +1013,26 @@ async function initialiseProductPage() {
                 "Product not found",
                 "This product could not be found in the catalogue. It may have been removed or its details may be unavailable."
             );
+
             return;
         }
 
         renderProduct(product);
     } catch (error) {
-        console.error("Unable to load product details:", error);
+        console.error(
+            "Unable to load product details:",
+            error
+        );
 
         showError(
             "Unable to load product",
-            "The product information could not be loaded. Please try again or return to the catalogue."
+            "The product information could not be loaded. Check that search_index_compact.json and the relevant product JSON file are published, then try again."
         );
     }
 }
+
+// ==================================================
+// START
+// ==================================================
 
 initialiseProductPage();
