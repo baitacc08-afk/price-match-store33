@@ -10,7 +10,8 @@ const SEARCH_INDEX_FILE = "./search_index_compact.json";
 const CART_STORAGE_KEY = "ems-auto-parts-cart";
 
 const PRODUCTS_PER_PAGE = 24;
-const DISCOUNT_MULTIPLIER = 0.25;
+const DISCOUNT_MULTIPLIER = 0.20;
+const DISCOUNT_PERCENTAGE = 80;
 
 const productContainer = document.getElementById("products");
 const searchInput = document.getElementById("search");
@@ -206,7 +207,7 @@ function addToCart(product) {
     existingItem.currency = product.currency || "AUD";
     existingItem.image = getProductImage(product);
     existingItem.productUrl = getProductURL(product);
-    existingItem.discountPercentage = 75;
+    existingItem.discountPercentage = DISCOUNT_PERCENTAGE,;
     existingItem.quantity =
       (Number(existingItem.quantity) || 0) + 1;
   } else {
@@ -219,7 +220,7 @@ function addToCart(product) {
       currency: product.currency || "AUD",
       image: getProductImage(product),
       productUrl: getProductURL(product),
-      discountPercentage: 75,
+      discountPercentage: DISCOUNT_PERCENTAGE,
       quantity: 1
     });
   }
