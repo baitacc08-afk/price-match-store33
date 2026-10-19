@@ -7,7 +7,7 @@
 // product details navigation, cart functionality and 80% off.
 // ==================================================
 
-const SEARCH_INDEX_FILE = "./search_index_compact.json";
+const SEARCH_INDEX_MANIFEST_FILE = "./catalogue_build_report.json";
 const CART_STORAGE_KEY = "ems-auto-parts-cart";
 
 const PRODUCTS_PER_PAGE = 24;
