@@ -129,8 +129,6 @@ function getProductImage(product) {
   return "";
 }
 
-// Kept for existing cart data compatibility.
-// This URL is not displayed as a supplier link on product cards.
 function getProductURL(product) {
   if (!product || !product.productUrl) return "";
 
@@ -511,7 +509,6 @@ function cleanSubcategoryName(value) {
 
 function getCategoryPath(product) {
   const mainCategory = findMainCategory(product);
-
   const originalParts = getCategoryParts(product.category);
 
   const meaningfulParts = originalParts
@@ -542,7 +539,6 @@ function getCategoryPath(product) {
 
 // ==================================================
 // BUILD CATEGORY TREE
-// Cached so it is not rebuilt for every search.
 // ==================================================
 
 function buildCategoryTree() {
@@ -1483,7 +1479,6 @@ async function renderProducts() {
   const currentVersion = ++renderVersion;
   const matchingEntries = findMatchingEntries();
   const totalMatches = matchingEntries.length;
-
   const visibleEntries = matchingEntries.slice(0, displayLimit);
 
   resultCount.textContent = "Loading products...";
@@ -1672,7 +1667,95 @@ function handleCategoryEscape(event) {
 }
 
 // ==================================================
-// LOAD SEARCH INDEX
+// LOAD SPLIT SEARCH INDEX FILES
+// ==================================================
+
+async function fetchJSONFile(filename) {
+  const response = await fetch(filename, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(
+      `Unable to load ${filename}: HTTP ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+async function loadSplitSearchIndex() {
+  const manifest = await fetchJSONFile(SEARCH_INDEX_MANIFEST_FILE);
+
+  if (!manifest || typeof manifest !== "object") {
+    throw new Error("The catalogue build report is invalid.");
+  }
+
+  // The builder report must list the split search index filenames.
+  const files = manifest.searchIndexFiles;
+
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new Error(
+      "The catalogue build report does not contain a searchIndexFiles array. " +
+      "Check that you uploaded the correct catalogue_build_report.json."
+    );
+  }
+
+  const validFilenames = files.filter(filename =>
+    typeof filename === "string" &&
+    /^search_index_\d+\.json$/.test(filename)
+  );
+
+  if (validFilenames.length !== files.length) {
+    throw new Error(
+      "The catalogue build report contains an invalid search-index filename."
+    );
+  }
+
+  const indexParts = await Promise.all(
+    validFilenames.map(async filename => {
+      const data = await fetchJSONFile(`./${encodeURIComponent(filename)}`);
+
+      if (!Array.isArray(data)) {
+        throw new Error(`${filename} does not contain a JSON array.`);
+      }
+
+      return data;
+    })
+  );
+
+  const combinedIndex = indexParts.flat();
+
+  searchIndex = combinedIndex.filter(product =>
+    product &&
+    product.id !== undefined &&
+    product.id !== null &&
+    String(product.id).length > 0 &&
+    typeof product.name === "string" &&
+    typeof product.file === "string" &&
+    /^products_\d+\.json$/.test(product.file)
+  );
+
+  if (searchIndex.length === 0) {
+    throw new Error(
+      "The search index files loaded, but no valid product entries were found."
+    );
+  }
+
+  categoryTreeCache = null;
+  searchIndexLoaded = true;
+
+  console.log(
+    "EMS Auto Parts search index loaded:",
+    searchIndex.length,
+    "products across",
+    validFilenames.length,
+    "index files."
+  );
+
+  return searchIndex.length;
+}
+
+// ==================================================
+// INITIALISE CATALOGUE
 // ==================================================
 
 async function initialiseCatalogue() {
@@ -1688,37 +1771,10 @@ async function initialiseCatalogue() {
   resultCount.textContent = "Loading product catalogue...";
 
   try {
-    const response = await fetch(
-      SEARCH_INDEX_FILE,
-      { cache: "no-store" }
-    );
+    const productCount = await loadSplitSearchIndex();
 
-    if (!response.ok) {
-      throw new Error(
-        `Unable to load the search index: HTTP ${response.status}`
-      );
-    }
-
-    const data = await response.json();
-
-    if (!Array.isArray(data)) {
-      throw new Error("The search index must contain a JSON array.");
-    }
-
-    searchIndex = data.filter(product =>
-      product &&
-      typeof product.id === "string" &&
-      typeof product.name === "string" &&
-      typeof product.file === "string"
-    );
-
-    searchIndexLoaded = true;
-
-    console.log(
-      "EMS Auto Parts search index loaded:",
-      searchIndex.length,
-      "products"
-    );
+    resultCount.textContent =
+      `Loaded ${productCount.toLocaleString()} products`;
 
     renderCategories();
     await renderProducts();
@@ -1732,8 +1788,9 @@ async function initialiseCatalogue() {
         <h3>Unable to load the catalogue</h3>
         <p>${escapeHTML(error.message)}</p>
         <p>
-          Check that search_index_compact.json and the product files
-          are published alongside index.html.
+          Check that catalogue_build_report.json, all search_index_*.json
+          files, and all products_*.json files are published alongside
+          index.html and app.js.
         </p>
       </div>
     `;
