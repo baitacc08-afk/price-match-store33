@@ -1671,7 +1671,7 @@ function handleCategoryEscape(event) {
 // ==================================================
 
 async function fetchJSONFile(filename) {
-  const response = await fetch(filename, { cache: "no-store" });
+  const response = await fetch(filename, { cache: "force-cache" });
 
   if (!response.ok) {
     throw new Error(
